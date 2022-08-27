@@ -29,14 +29,23 @@ module Compute_Unit_Top #(
 )(
 	 input rst_i
 	,input clk_i
+
 	,input [BUS_SIZE-1:0] ifm_sparsemap_i
-	,input [BUS_SIZE*8-1:0] ifm_nonzero_data_i
+	,input [BUS_SIZE-1:0][7:0] ifm_nonzero_data_i
 	,input ifm_wr_valid_i
-	,output ifm_wr_ready_o
+	,input [$clog2(MEM_SIZE/BUS_SIZE)-1:0] ifm_wr_count_i
+	,input ifm_wr_sel_i
+	,input ifm_rd_sel_i
+
 	,input [BUS_SIZE-1:0] filter_sparsemap_i
-	,input [BUS_SIZE*8-1:0] filter_nonzero_data_i
+	,input [BUS_SIZE-1:0][7:0] filter_nonzero_data_i
 	,input filter_wr_valid_i
-	,output filter_wr_ready_o
+	,input [$clog2(MEM_SIZE/BUS_SIZE)-1:0] filter_wr_count_i
+	,input filter_wr_sel_i
+	,input filter_rd_sel_i
+
+	,input init_i
+	,input chunk_start_i
 
 	,output chunk_end_o
 
@@ -56,7 +65,28 @@ module Compute_Unit_Top #(
 		,.PREFIX_SUM_SIZE(PREFIX_SUM_SIZE)
 		,.OUTPUT_BUF_SIZE(OUTPUT_BUF_SIZE)
 	) u_Compute_Unit (
-		 .*
+		 .rst_i
+		,.clk_i
+		
+		,.ifm_sparsemap_i
+		,.ifm_nonzero_data_i
+		,.ifm_wr_valid_i
+		,.ifm_wr_count_i
+		,.ifm_wr_sel_i
+		,.ifm_rd_sel_i
+		
+		,.filter_sparsemap_i
+		,.filter_nonzero_data_i
+		,.filter_wr_valid_i
+		,.filter_wr_count_i
+		,.filter_wr_sel_i
+		,.filter_rd_sel_i
+		
+		,.init_i
+		,.chunk_start_i
+		
+		,.chunk_end_o
+		
 		,.acc_dat_i(acc_dat_i_w)
 		,.acc_val_o(acc_val_o_w)
 		,.acc_dat_o(acc_dat_o_w)
@@ -66,7 +96,9 @@ module Compute_Unit_Top #(
 		 .BUF_SIZE(OUTPUT_BUF_SIZE)
 		,.BUF_NUM(OUTPUT_BUF_NUM)
 	) u_Output_Buffer (
-		 .*
+		 .rst_i
+		,.clk_i
+
 		,.acc_sel_i(acc_buf_sel_i)
 		,.acc_val_i(acc_val_o_w)
 		,.acc_dat_i(acc_dat_o_w)

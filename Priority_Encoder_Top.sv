@@ -31,14 +31,14 @@ module Priority_Encoder_Top #(
 
 	,output valid_o
 	,output [$clog2(SIZE)-1:0] match_addr_o
-	,output pri_enc_end_o
+	,output pri_enc_last_o
 );
 
 	logic [SIZE-1:0] and_gate_out;
 	logic [SIZE-1:0] pri_enc_i_r;
 	logic [SIZE-1:0] pri_enc_i_w;
 	logic [$clog2(SIZE):0] pri_enc_o_w;
-	logic [SIZE-1:0] pri_enc_temp_w;
+	logic [SIZE-1:0] pri_enc_next_w;
 	
 	
 	And_Gate #(
@@ -66,12 +66,12 @@ module Priority_Encoder_Top #(
 		end
 		else if (valid_i) begin
 			if ((state_r == INPUT_CHANGE)) begin
-				if (!pri_enc_end_o) begin
+				if (!pri_enc_last_o) begin
 					state_r <= #1 FLY;
 				end
 			end
 			else begin	// FLY
-				if (pri_enc_end_o) begin
+				if (pri_enc_last_o) begin
 					state_r <= #1 INPUT_CHANGE;
 				end
 			end
@@ -85,19 +85,16 @@ module Priority_Encoder_Top #(
 		else if (valid_i) begin
 			if ((state_r == INPUT_CHANGE)) begin
 				pri_enc_i_r <= #1 and_gate_out;
-				pri_enc_i_r[pri_enc_o_w] <= #1 1'b0;
 			end
-			else begin	// FLY
-				if (!pri_enc_end_o) begin
-					pri_enc_i_r[pri_enc_o_w] <= #1 1'b0;
-				end
-			end
+
+			pri_enc_i_r[pri_enc_o_w] <= #1 1'b0;
 		end
 	end
 
+
 	always_comb begin
-		pri_enc_temp_w = pri_enc_i_w;	
-		pri_enc_temp_w[pri_enc_o_w[$clog2(SIZE)-1:0]] = 0;
+		pri_enc_next_w = pri_enc_i_w;	
+		pri_enc_next_w[pri_enc_o_w[$clog2(SIZE)-1:0]] = 0;
 	end
 	
 	assign pri_enc_i_w = 	  !valid_i ? {SIZE{1'b1}}
@@ -105,6 +102,6 @@ module Priority_Encoder_Top #(
 				: pri_enc_i_r;
 	assign match_addr_o = pri_enc_o_w[$clog2(SIZE)-1:0];
 	assign valid_o = (pri_enc_o_w != SIZE) && valid_i;
-	assign pri_enc_end_o = (~|pri_enc_temp_w) && valid_i;
+	assign pri_enc_last_o = (~|pri_enc_next_w) && valid_i;
 
 endmodule

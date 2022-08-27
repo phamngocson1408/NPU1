@@ -32,7 +32,7 @@ module MAC #(
 	,input valid_i
 	,input chunk_end_i	// TODO: delete?
 
-	,output [OUTPUT_BUF_SIZE-1:0] acc_dat_i	
+	,input [OUTPUT_BUF_SIZE-1:0] acc_dat_i	
 	,output acc_val_o
 	,output [OUTPUT_BUF_SIZE-1:0] acc_dat_o
     	);
