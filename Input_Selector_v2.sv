@@ -28,12 +28,18 @@ module Input_Selector_v2 #(
 	 input rst_i
 	,input clk_i
 
+`ifdef COMB_DAT_CHUNK
+	,output [$clog2(MEM_SIZE):0] rd_addr_o
+	,output [$clog2(MEM_SIZE/PREFIX_SUM_SIZE)-1:0] rd_sparsemap_addr_o
+	,input [PREFIX_SUM_SIZE-1:0] rd_sparsemap_i	
+`else
 	,input [BUS_SIZE-1:0] ifm_sparsemap_i
 	,input [BUS_SIZE-1:0][7:0] ifm_nonzero_data_i
 	,input ifm_wr_valid_i
 	,input [$clog2(MEM_SIZE/BUS_SIZE)-1:0] ifm_wr_count_i
 	,input ifm_wr_sel_i
 	,input ifm_rd_sel_i
+`endif
 
 	,input [BUS_SIZE-1:0] filter_sparsemap_i
 	,input [BUS_SIZE-1:0][7:0] filter_nonzero_data_i
@@ -45,7 +51,9 @@ module Input_Selector_v2 #(
 	,input init_i
 	,input chunk_start_i
 
+`ifndef COMB_DAT_CHUNK
 	,output logic [7:0] ifm_data_o
+`endif
 	,output [7:0] filter_data_o
 	,output data_valid_o
 	,output chunk_end_o
@@ -54,7 +62,7 @@ module Input_Selector_v2 #(
 	logic [$clog2(PREFIX_SUM_SIZE)-1:0] pri_enc_match_addr_w;
 	logic pri_enc_last_w;
 	logic [PREFIX_SUM_SIZE-1:0] filter_sparsemap_w;
-	logic [PREFIX_SUM_SIZE-1:0] ifm_sparsemap_com_w;
+	logic [PREFIX_SUM_SIZE-1:0] ifm_sparsemap_w;
 
 	localparam RD_SPARSEMAP_NUM = MEM_SIZE/PREFIX_SUM_SIZE;
 
@@ -62,7 +70,22 @@ module Input_Selector_v2 #(
 
 	logic chunk_end_r;
 
-
+`ifdef COMB_DAT_CHUNK
+	IFM_Input_Sel #(
+		 .MEM_SIZE(MEM_SIZE)
+		,.PREFIX_SUM_SIZE(PREFIX_SUM_SIZE)
+	) u_IFM_Input_sel (
+		 .rst_i
+		,.clk_i
+		
+		,.pri_enc_match_addr_i(pri_enc_match_addr_w)
+		,.pri_enc_end_i(pri_enc_last_w)
+		,.chunk_end_i(chunk_end_o)
+		
+		,.rd_sparsemap_i	
+		,.rd_addr_o
+	);
+`else
 	Data_Chunk_Top #(
 		 .MEM_SIZE(MEM_SIZE)
 		,.BUS_SIZE(BUS_SIZE)
@@ -84,8 +107,9 @@ module Input_Selector_v2 #(
 		,.chunk_end_i(chunk_end_o)
 
 		,.rd_sparsemap_addr_i(rd_sparsemap_addr_r)
-		,.rd_sparsemap_o(ifm_sparsemap_com_w)
+		,.rd_sparsemap_o(ifm_sparsemap_w)
 	);
+`endif
 
 	Data_Chunk_Top #(
 		 .MEM_SIZE(MEM_SIZE)
@@ -119,7 +143,11 @@ module Input_Selector_v2 #(
 		 .rst_i
 		,.clk_i
 		,.valid_i(run_w)
-		,.in1_i(ifm_sparsemap_com_w)
+`ifdef COMB_DAT_CHUNK
+		,.in1_i(rd_sparsemap_i)
+`else
+		,.in1_i(ifm_sparsemap_w)
+`endif
 		,.in2_i(filter_sparsemap_w)
 		
 		,.valid_o(data_valid_o)
@@ -154,5 +182,9 @@ module Input_Selector_v2 #(
 
 	assign chunk_end_o = 	((rd_sparsemap_addr_r == (RD_SPARSEMAP_NUM-1)) && pri_enc_last_w) 
 				|| (chunk_end_r);
+	
+`ifdef COMB_DAT_CHUNK
+	assign rd_sparsemap_addr_o = rd_sparsemap_addr_r;
+`endif
 
 endmodule

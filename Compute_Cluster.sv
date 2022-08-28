@@ -64,6 +64,13 @@ module Compute_Cluster #(
 	logic [COMPUTE_UNIT_NUM-1:0] chunk_end_w;
 	logic [COMPUTE_UNIT_NUM-1:0][OUTPUT_BUF_SIZE-1:0] out_buf_dat_w;
 
+`ifdef COMB_DAT_CHUNK
+	logic [COMPUTE_UNIT_NUM-1:0][$clog2(MEM_SIZE):0] rd_addr_w;
+	logic [COMPUTE_UNIT_NUM-1:0][7:0] rd_data_w;
+	logic [COMPUTE_UNIT_NUM-1:0][$clog2(MEM_SIZE/PREFIX_SUM_SIZE)-1:0] rd_sparsemap_addr_w;
+	logic [COMPUTE_UNIT_NUM-1:0][PREFIX_SUM_SIZE-1:0] rd_sparsemap_w;
+`endif
+
 	genvar i;
 	for (i=0; i<COMPUTE_UNIT_NUM; i=i+1) begin: gen_com_unit
 		Compute_Unit_Top #(
@@ -76,13 +83,19 @@ module Compute_Cluster #(
 			 .rst_i
 			,.clk_i
 
+`ifdef COMB_DAT_CHUNK
+			,.rd_addr_o(rd_addr_w[i])
+			,.rd_data_i(rd_data_w[i])
+			,.rd_sparsemap_addr_o(rd_sparsemap_addr_w[i])
+			,.rd_sparsemap_i(rd_sparsemap_w[i])
+`else
 			,.ifm_sparsemap_i
 			,.ifm_nonzero_data_i
 			,.ifm_wr_valid_i
 			,.ifm_wr_count_i
 			,.ifm_wr_sel_i
 			,.ifm_rd_sel_i
-
+`endif
 			,.filter_sparsemap_i
 			,.filter_nonzero_data_i
 			,.filter_wr_valid_i(filter_wr_valid_w[i])
@@ -108,5 +121,30 @@ module Compute_Cluster #(
 
 	assign chunk_end_o = &chunk_end_w;
 	assign out_buf_dat_o = out_buf_dat_w[com_unit_out_buf_sel_i];
+
+`ifdef COMB_DAT_CHUNK
+	IFM_Dat_Chunk_Comb #(
+		 .MEM_SIZE(MEM_SIZE)
+		,.BUS_SIZE(BUS_SIZE)
+		,.PREFIX_SUM_SIZE(PREFIX_SUM_SIZE)
+		,.COMPUTE_UNIT_NUM(COMPUTE_UNIT_NUM)
+	) u_IFM_Dat_Chunk_Comb (
+		 .rst_i
+		,.clk_i
+
+		,.wr_sparsemap_i(ifm_sparsemap_i)
+		,.wr_nonzero_data_i(ifm_nonzero_data_i)
+		,.wr_valid_i(ifm_wr_valid_i)
+		,.wr_count_i(ifm_wr_count_i)
+		,.wr_sel_i(ifm_wr_sel_i)
+		,.rd_sel_i(ifm_rd_sel_i)
+
+		,.rd_addr_i(rd_addr_w)
+		,.rd_data_o(rd_data_w)
+
+		,.rd_sparsemap_addr_i(rd_sparsemap_addr_w)
+		,.rd_sparsemap_o(rd_sparsemap_w)	
+	);
+`endif
 
 endmodule

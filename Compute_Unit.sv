@@ -29,12 +29,19 @@ module Compute_Unit #(
 	 input rst_i
 	,input clk_i
 
+`ifdef COMB_DAT_CHUNK
+	,output [$clog2(MEM_SIZE):0] rd_addr_o
+	,input [7:0] rd_data_i
+	,output [$clog2(MEM_SIZE/PREFIX_SUM_SIZE)-1:0] rd_sparsemap_addr_o
+	,input [PREFIX_SUM_SIZE-1:0] rd_sparsemap_i	
+`else
 	,input [BUS_SIZE-1:0] ifm_sparsemap_i
 	,input [BUS_SIZE-1:0][7:0] ifm_nonzero_data_i
 	,input ifm_wr_valid_i
 	,input [$clog2(MEM_SIZE/BUS_SIZE)-1:0] ifm_wr_count_i
 	,input ifm_wr_sel_i
 	,input ifm_rd_sel_i
+`endif
 
 	,input [BUS_SIZE-1:0] filter_sparsemap_i
 	,input [BUS_SIZE-1:0][7:0] filter_nonzero_data_i
@@ -53,7 +60,9 @@ module Compute_Unit #(
 	,output [OUTPUT_BUF_SIZE-1:0] acc_dat_o
 );
 
+`ifndef COMB_DAT_CHUNK
 	logic [7:0] ifm_data_w;
+`endif
 	logic [7:0] filter_data_w;
 	logic data_valid_w;
 
@@ -65,12 +74,18 @@ module Compute_Unit #(
 		 .rst_i
 		,.clk_i
 		
+`ifdef COMB_DAT_CHUNK
+		,.rd_addr_o
+		,.rd_sparsemap_addr_o
+		,.rd_sparsemap_i
+`else
 		,.ifm_sparsemap_i
 		,.ifm_nonzero_data_i
 		,.ifm_wr_valid_i
 		,.ifm_wr_count_i
 		,.ifm_wr_sel_i
 		,.ifm_rd_sel_i
+`endif
 		
 		,.filter_sparsemap_i
 		,.filter_nonzero_data_i
@@ -82,7 +97,9 @@ module Compute_Unit #(
 		,.init_i
 		,.chunk_start_i
 		
+`ifndef COMB_DAT_CHUNK
 		,.ifm_data_o(ifm_data_w)
+`endif
 		,.filter_data_o(filter_data_w)
 		,.data_valid_o(data_valid_w)
 		,.chunk_end_o
@@ -95,7 +112,11 @@ module Compute_Unit #(
 		 .rst_i
 		,.clk_i
 		
+`ifdef COMB_DAT_CHUNK
+		,.in1_i(rd_data_i)
+`else
 		,.in1_i(ifm_data_w)
+`endif
 		,.in2_i(filter_data_w)
 		,.valid_i(data_valid_w)
 		,.chunk_end_i(chunk_end_o)
