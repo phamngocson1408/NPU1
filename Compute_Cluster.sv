@@ -23,7 +23,7 @@
 module Compute_Cluster #(
 	 parameter MEM_SIZE = 128	//Bytes
 	,parameter BUS_SIZE = 8	//Bytes
-	,parameter PREFIX_SUM_SIZE = 8	//bits
+	,parameter PREFIX_SUM_SIZE = `PREFIX_SUM_SIZE	//bits
 	,parameter OUTPUT_BUF_SIZE = 32 // bits
 	,parameter OUTPUT_BUF_NUM = 32
 	,parameter COMPUTE_UNIT_NUM = 32
