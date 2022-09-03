@@ -1,4 +1,4 @@
-`timescale 1ns / 1ps
+`include "Global_Include.vh"
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
 // Engineer: 
@@ -20,28 +20,25 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module MAC #(
-	 parameter DATA_SIZE = 8 	// bits
-	,parameter OUTPUT_BUF_SIZE = 32 // bits
-)(
+module MAC (
 	 input rst_i
 	,input clk_i
 
-	,input [DATA_SIZE-1:0] in1_i
-	,input [DATA_SIZE-1:0] in2_i
+	,input [`DATA_SIZE-1:0] in1_i
+	,input [`DATA_SIZE-1:0] in2_i
 	,input valid_i
 	,input chunk_end_i	// TODO: delete?
 
-	,input [OUTPUT_BUF_SIZE-1:0] acc_dat_i	
+	,input [`OUTPUT_BUF_SIZE-1:0] acc_dat_i	
 	,output acc_val_o
-	,output [OUTPUT_BUF_SIZE-1:0] acc_dat_o
+	,output [`OUTPUT_BUF_SIZE-1:0] acc_dat_o
     	);
 
-	logic [DATA_SIZE*2-1:0] mul_r;
+	logic [`DATA_SIZE*2-1:0] mul_r;
 	logic valid_r;
 	always_ff @(posedge clk_i) begin
 		if (rst_i) begin
-			mul_r <= #1 {(DATA_SIZE*2){1'b0}};	
+			mul_r <= #1 {(`DATA_SIZE*2){1'b0}};	
 			valid_r <= #1 1'b0;
 		end
 		else if (valid_i) begin
@@ -49,7 +46,7 @@ module MAC #(
 			valid_r <= #1 1'b1;
 		end
 		else begin
-			mul_r <= #1 {(DATA_SIZE*2){1'b0}};	
+			mul_r <= #1 {(`DATA_SIZE*2){1'b0}};	
 			valid_r <= #1 1'b0;
 		end
 	end

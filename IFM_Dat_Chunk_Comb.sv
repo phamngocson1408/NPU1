@@ -21,45 +21,39 @@
 
 
 module IFM_Dat_Chunk_Comb #(
-	 parameter MEM_SIZE = 128	//Bytes
-	,parameter BUS_SIZE = 16	//Bytes
-	,parameter PREFIX_SUM_SIZE = 8	//bits
-	,parameter COMPUTE_UNIT_NUM = 32
+	 localparam WR_DAT_CYC_NUM = `MEM_SIZE/`BUS_SIZE
+	,localparam RD_SPARSEMAP_NUM = `MEM_SIZE/`PREFIX_SUM_SIZE
 )(
 	 input rst_i
 	,input clk_i
 
-	,input [BUS_SIZE-1:0] wr_sparsemap_i
-	,input [BUS_SIZE-1:0][7:0] wr_nonzero_data_i 
+	,input [`BUS_SIZE-1:0] wr_sparsemap_i
+	,input [`BUS_SIZE-1:0][7:0] wr_nonzero_data_i 
 	,input wr_valid_i
-	,input [$clog2(MEM_SIZE/BUS_SIZE)-1:0] wr_count_i
+	,input [$clog2(WR_DAT_CYC_NUM)-1:0] wr_count_i
 	,input wr_sel_i
 	,input rd_sel_i
 
-	,input [COMPUTE_UNIT_NUM-1:0][$clog2(MEM_SIZE):0] rd_addr_i
-	,output [COMPUTE_UNIT_NUM-1:0][7:0] rd_data_o
+	,input [`COMPUTE_UNIT_NUM-1:0][$clog2(`MEM_SIZE):0] rd_addr_i
+	,output [`COMPUTE_UNIT_NUM-1:0][7:0] rd_data_o
 
-	,input [COMPUTE_UNIT_NUM-1:0][$clog2(MEM_SIZE/PREFIX_SUM_SIZE)-1:0] rd_sparsemap_addr_i
-	,output logic [COMPUTE_UNIT_NUM-1:0][PREFIX_SUM_SIZE-1:0] rd_sparsemap_o	
+	,input [`COMPUTE_UNIT_NUM-1:0][$clog2(RD_SPARSEMAP_NUM)-1:0] rd_sparsemap_addr_i
+	,output logic [`COMPUTE_UNIT_NUM-1:0][`PREFIX_SUM_SIZE-1:0] rd_sparsemap_o	
 );
 	
 	logic [1:0] wr_val_w;
-	logic [$clog2(MEM_SIZE):0] rd_dat_addr_w;	
-	logic [1:0][MEM_SIZE:1][7:0] rd_nonzero_data_w;
-	logic [MEM_SIZE:1][7:0] rd_nonzero_data_comb_w;
-	logic [1:0][MEM_SIZE-1:0] rd_sparsemap_w;
-	logic [MEM_SIZE-1:0] rd_sparsemap_comb_w;
+	logic [$clog2(`MEM_SIZE):0] rd_dat_addr_w;	
+	logic [1:0][`MEM_SIZE:1][7:0] rd_nonzero_data_w;
+	logic [`MEM_SIZE:1][7:0] rd_nonzero_data_comb_w;
+	logic [1:0][`MEM_SIZE-1:0] rd_sparsemap_w;
+	logic [`MEM_SIZE-1:0] rd_sparsemap_comb_w;
 
-	logic [$clog2(PREFIX_SUM_SIZE):0] prefix_sum_out_w [PREFIX_SUM_SIZE-1:0];
+	logic [$clog2(`PREFIX_SUM_SIZE):0] prefix_sum_out_w [`PREFIX_SUM_SIZE-1:0];
 
-	logic [$clog2(MEM_SIZE):0] rd_data_base_addr_r;	
-	logic [$clog2(PREFIX_SUM_SIZE):0] rd_data_addr_temp_w;	
+	logic [$clog2(`MEM_SIZE):0] rd_data_base_addr_r;	
+	logic [$clog2(`PREFIX_SUM_SIZE):0] rd_data_addr_temp_w;	
 
-	Dat_Chunk_Comb #(
-		 .MEM_SIZE(MEM_SIZE)
-		,.BUS_SIZE(BUS_SIZE)
-		,.PREFIX_SUM_SIZE(PREFIX_SUM_SIZE)
-	) u_Dat_Chunk_Comb_0 (
+	Dat_Chunk_Comb u_Dat_Chunk_Comb_0 (
 		 .clk_i
 		,.rst_i
 		,.wr_sparsemap_i
@@ -71,11 +65,7 @@ module IFM_Dat_Chunk_Comb #(
 		,.rd_sparsemap_o(rd_sparsemap_w[0])
 	);
 
-	Dat_Chunk_Comb #(
-		 .MEM_SIZE(MEM_SIZE)
-		,.BUS_SIZE(BUS_SIZE)
-		,.PREFIX_SUM_SIZE(PREFIX_SUM_SIZE)
-	) u_Dat_Chunk_Comb_1 (
+	Dat_Chunk_Comb u_Dat_Chunk_Comb_1 (
 		 .clk_i
 		,.rst_i
 		,.wr_sparsemap_i
@@ -103,18 +93,18 @@ module IFM_Dat_Chunk_Comb #(
 
 	// Read Sparsemap
 	always_comb begin
-		for (integer k=0; k< COMPUTE_UNIT_NUM; k=k+1) begin
-			rd_sparsemap_o[k] = {PREFIX_SUM_SIZE{1'b0}};
-			for (integer i=0; i<(MEM_SIZE/PREFIX_SUM_SIZE); i = i+1) begin
+		for (integer k=0; k< `COMPUTE_UNIT_NUM; k=k+1) begin
+			rd_sparsemap_o[k] = {`PREFIX_SUM_SIZE{1'b0}};
+			for (integer i=0; i<(RD_SPARSEMAP_NUM); i = i+1) begin
 				if (rd_sparsemap_addr_i[k] == i)
-					rd_sparsemap_o[k] = rd_sparsemap_comb_w[PREFIX_SUM_SIZE*i +: PREFIX_SUM_SIZE];
+					rd_sparsemap_o[k] = rd_sparsemap_comb_w[`PREFIX_SUM_SIZE*i +: `PREFIX_SUM_SIZE];
 			end
 		end
 	end
 
 	// Read Nonzero data
 	genvar k;
-	for (k=0; k< COMPUTE_UNIT_NUM; k=k+1) begin
+	for (k=0; k< `COMPUTE_UNIT_NUM; k=k+1) begin
 		assign rd_data_o[k] = rd_nonzero_data_comb_w[rd_addr_i[k]];
 	end
 

@@ -1,4 +1,4 @@
-`timescale 1ns / 1ps
+`include "Global_Include.vh"
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
 // Engineer: 
@@ -21,65 +21,56 @@
 
 
 module Compute_Cluster #(
-	 parameter MEM_SIZE = 128	//Bytes
-	,parameter BUS_SIZE = 8	//Bytes
-	,parameter PREFIX_SUM_SIZE = `PREFIX_SUM_SIZE	//bits
-	,parameter OUTPUT_BUF_SIZE = 32 // bits
-	,parameter OUTPUT_BUF_NUM = 32
-	,parameter COMPUTE_UNIT_NUM = 32
+	 localparam WR_DAT_CYC_NUM = `MEM_SIZE/`BUS_SIZE
+	,localparam RD_SPARSEMAP_NUM = `MEM_SIZE/`PREFIX_SUM_SIZE
 )(
 	 input rst_i
 	,input clk_i
 
-	,input [BUS_SIZE-1:0] ifm_sparsemap_i
-	,input [BUS_SIZE*8-1:0] ifm_nonzero_data_i
+	,input [`BUS_SIZE-1:0] ifm_sparsemap_i
+	,input [`BUS_SIZE*8-1:0] ifm_nonzero_data_i
 	,input ifm_wr_valid_i
-	,input [$clog2(MEM_SIZE/BUS_SIZE)-1:0] ifm_wr_count_i
+	,input [$clog2(COMPUTE_UNIT_NUM)-1:0] ifm_wr_count_i
 	,input ifm_wr_sel_i
 	,input ifm_rd_sel_i
 
-	,input [BUS_SIZE-1:0] filter_sparsemap_i
-	,input [BUS_SIZE*8-1:0] filter_nonzero_data_i
+	,input [`BUS_SIZE-1:0] filter_sparsemap_i
+	,input [`BUS_SIZE*8-1:0] filter_nonzero_data_i
 	,input filter_wr_valid_i
-	,input [$clog2(MEM_SIZE/BUS_SIZE)-1:0] filter_wr_count_i
+	,input [$clog2(COMPUTE_UNIT_NUM)-1:0] filter_wr_count_i
 	,input filter_wr_sel_i
 	,input filter_rd_sel_i
-	,input [$clog2(OUTPUT_BUF_NUM)-1:0] filter_wr_order_sel_i
+	,input [$clog2(`OUTPUT_BUF_NUM)-1:0] filter_wr_order_sel_i
 
 	,input init_i
 	,input chunk_start_i
+	,input [$clog2(RD_SPARSEMAP_NUM)-1:0] rd_sparsemap_num_i
 
-	,output chunk_end_o
+	,output total_chunk_end_o
 
-	,input [$clog2(OUTPUT_BUF_NUM)-1:0] acc_buf_sel_i
+	,input [$clog2(`OUTPUT_BUF_NUM)-1:0] acc_buf_sel_i
 
-	,input [$clog2(OUTPUT_BUF_NUM)-1:0] out_buf_sel_i
-	,input [$clog2(COMPUTE_UNIT_NUM)-1:0] com_unit_out_buf_sel_i
-	,output [OUTPUT_BUF_SIZE-1:0] out_buf_dat_o
+	,input [$clog2(`OUTPUT_BUF_NUM)-1:0] out_buf_sel_i
+	,input [$clog2(`COMPUTE_UNIT_NUM)-1:0] com_unit_out_buf_sel_i
+	,output [`OUTPUT_BUF_SIZE-1:0] out_buf_dat_o
 );
 
-	logic [COMPUTE_UNIT_NUM-1:0] ifm_wr_ready_w;
-	logic [COMPUTE_UNIT_NUM-1:0] filter_wr_valid_w;
-	logic [COMPUTE_UNIT_NUM-1:0] filter_wr_ready_w;
-	logic [COMPUTE_UNIT_NUM-1:0] chunk_end_w;
-	logic [COMPUTE_UNIT_NUM-1:0][OUTPUT_BUF_SIZE-1:0] out_buf_dat_w;
+	logic [`COMPUTE_UNIT_NUM-1:0] ifm_wr_ready_w;
+	logic [`COMPUTE_UNIT_NUM-1:0] filter_wr_valid_w;
+	logic [`COMPUTE_UNIT_NUM-1:0] filter_wr_ready_w;
+	logic [`COMPUTE_UNIT_NUM-1:0] chunk_end_w;
+	logic [`COMPUTE_UNIT_NUM-1:0][`OUTPUT_BUF_SIZE-1:0] out_buf_dat_w;
 
 `ifdef COMB_DAT_CHUNK
-	logic [COMPUTE_UNIT_NUM-1:0][$clog2(MEM_SIZE):0] rd_addr_w;
-	logic [COMPUTE_UNIT_NUM-1:0][7:0] rd_data_w;
-	logic [COMPUTE_UNIT_NUM-1:0][$clog2(MEM_SIZE/PREFIX_SUM_SIZE)-1:0] rd_sparsemap_addr_w;
-	logic [COMPUTE_UNIT_NUM-1:0][PREFIX_SUM_SIZE-1:0] rd_sparsemap_w;
+	logic [`COMPUTE_UNIT_NUM-1:0][$clog2(`MEM_SIZE):0] rd_addr_w;
+	logic [`COMPUTE_UNIT_NUM-1:0][7:0] rd_data_w;
+	logic [`COMPUTE_UNIT_NUM-1:0][$clog2(RD_SPARSEMAP_NUM)-1:0] rd_sparsemap_addr_w;
+	logic [`COMPUTE_UNIT_NUM-1:0][`PREFIX_SUM_SIZE-1:0] rd_sparsemap_w;
 `endif
 
 	genvar i;
-	for (i=0; i<COMPUTE_UNIT_NUM; i=i+1) begin: gen_com_unit
-		Compute_Unit_Top #(
-			 .MEM_SIZE(MEM_SIZE)
-			,.BUS_SIZE(BUS_SIZE)
-			,.PREFIX_SUM_SIZE(PREFIX_SUM_SIZE)
-			,.OUTPUT_BUF_SIZE(OUTPUT_BUF_SIZE)
-			,.OUTPUT_BUF_NUM(OUTPUT_BUF_NUM)
-		) u_Compute_Unit_Top (
+	for (i=0; i<`COMPUTE_UNIT_NUM; i=i+1) begin: gen_com_unit
+		Compute_Unit_Top u_Compute_Unit_Top (
 			 .rst_i
 			,.clk_i
 
@@ -105,6 +96,7 @@ module Compute_Cluster #(
 
 			,.init_i
 			,.chunk_start_i
+			,.rd_sparsemap_num_i
 
 			,.chunk_end_o(chunk_end_w[i])
 
@@ -115,20 +107,15 @@ module Compute_Cluster #(
 		);
 	end
 
-	for (i=0; i<COMPUTE_UNIT_NUM; i=i+1) begin
+	for (i=0; i<`COMPUTE_UNIT_NUM; i=i+1) begin
 		assign filter_wr_valid_w[i] = (filter_wr_order_sel_i == i) ? filter_wr_valid_i : 0;
 	end
 
-	assign chunk_end_o = &chunk_end_w;
+	assign total_chunk_end_o = &chunk_end_w;
 	assign out_buf_dat_o = out_buf_dat_w[com_unit_out_buf_sel_i];
 
 `ifdef COMB_DAT_CHUNK
-	IFM_Dat_Chunk_Comb #(
-		 .MEM_SIZE(MEM_SIZE)
-		,.BUS_SIZE(BUS_SIZE)
-		,.PREFIX_SUM_SIZE(PREFIX_SUM_SIZE)
-		,.COMPUTE_UNIT_NUM(COMPUTE_UNIT_NUM)
-	) u_IFM_Dat_Chunk_Comb (
+	IFM_Dat_Chunk_Comb u_IFM_Dat_Chunk_Comb (
 		 .rst_i
 		,.clk_i
 

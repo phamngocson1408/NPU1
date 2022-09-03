@@ -1,4 +1,4 @@
-`timescale 1ns / 1ps
+`include "Global_Include.vh"
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
 // Engineer: 
@@ -20,28 +20,25 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module Output_Buffer #(
-	 parameter BUF_SIZE = 32 // bits
-	,parameter BUF_NUM = 32 
-)(
+module Output_Buffer (
 	 input rst_i
 	,input clk_i
-	,input [$clog2(BUF_NUM)-1:0] acc_sel_i
+	,input [$clog2(`OUTPUT_BUF_NUM)-1:0] acc_sel_i
 	,input acc_val_i
-	,input [BUF_SIZE-1:0] acc_dat_i
-	,output [BUF_SIZE-1:0] acc_dat_o
+	,input [`BUF_SIZE-1:0] acc_dat_i
+	,output [`BUF_SIZE-1:0] acc_dat_o
 
-	,input [$clog2(BUF_NUM)-1:0] out_sel_i
-	,output [BUF_SIZE-1:0] out_dat_o
+	,input [$clog2(`OUTPUT_BUF_NUM)-1:0] out_sel_i
+	,output [`BUF_SIZE-1:0] out_dat_o
 );
 
-	logic [BUF_NUM-1:0][BUF_SIZE-1:0] partial_output_mem;
+	logic [`OUTPUT_BUF_NUM-1:0][`BUF_SIZE-1:0] partial_output_mem;
 
 	integer i;
 	always_ff @(posedge clk_i) begin
 		if (rst_i) begin
-			for(i=0; i<BUF_NUM; i=i+1) begin
-				partial_output_mem[i] <= #1 {BUF_SIZE{1'b0}};
+			for(i=0; i<`OUTPUT_BUF_NUM; i=i+1) begin
+				partial_output_mem[i] <= #1 {`BUF_SIZE{1'b0}};
 			end
 		end
 		else if (acc_val_i) begin

@@ -1,4 +1,4 @@
-`timescale 1ns / 1ps
+`include "Global_Include.vh"
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
 // Engineer: 
@@ -20,13 +20,11 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module And_Gate #(
-    parameter   SIZE = 128
-    )(
-      input  [SIZE-1:0] IFM_i
-     ,input  [SIZE-1:0] filter_i
-     ,output [SIZE-1:0] out_o 
-    );
+module And_Gate (
+	 input  [`PREFIX_SUM_SIZE-1:0] IFM_i
+	,input  [`PREFIX_SUM_SIZE-1:0] filter_i
+	,output [`PREFIX_SUM_SIZE-1:0] out_o 
+);
 
 assign out_o = IFM_i & filter_i;
 
