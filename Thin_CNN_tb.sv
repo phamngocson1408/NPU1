@@ -118,17 +118,19 @@ task ifm_input_gen();
 	ifm_mem_gen();
 	ifm_wr_valid_r = 1'b1;
 	ifm_wr_count_r = 0;
+	ifm_sparse_map_r = mem_ifm_sparse_map_r[`BUS_SIZE*ifm_wr_count_r +: `BUS_SIZE];
+	ifm_nonzero_data_r = mem_ifm_non_zero_data_r[`BUS_SIZE*ifm_wr_count_r +: `BUS_SIZE];
 
 	repeat(WR_DAT_CYC_NUM) @(posedge (clk_r && !rst_r)) begin
 		#1;
 		ifm_wr_count_r = ifm_wr_count_r+1;
+		ifm_sparse_map_r = mem_ifm_sparse_map_r[`BUS_SIZE*ifm_wr_count_r +: `BUS_SIZE];
+		ifm_nonzero_data_r = mem_ifm_non_zero_data_r[`BUS_SIZE*ifm_wr_count_r +: `BUS_SIZE];
 	end
 
 	ifm_wr_valid_r = 1'b0;
 	ifm_wr_count_r = 0;
 endtask
-assign ifm_sparse_map_r = mem_ifm_sparse_map_r[`BUS_SIZE*ifm_wr_count_r +: `BUS_SIZE];
-assign ifm_nonzero_data_r = mem_ifm_non_zero_data_r[`BUS_SIZE*ifm_wr_count_r +: `BUS_SIZE];
 
 task filter_mem_gen();
 	integer i;
@@ -153,45 +155,62 @@ task filter_input_gen();
 	filter_mem_gen();
 	filter_wr_valid_r = 1'b1;
 	filter_wr_count_r = 0;
+	filter_sparse_map_r = mem_filter_sparse_map_r[`BUS_SIZE*filter_wr_count_r +: `BUS_SIZE];
+	filter_nonzero_data_r = mem_filter_non_zero_data_r[`BUS_SIZE*filter_wr_count_r +: `BUS_SIZE];
 
 	repeat(WR_DAT_CYC_NUM) @(posedge (clk_r && !rst_r)) begin
 		#1;
 		filter_wr_count_r = filter_wr_count_r+1;
+		filter_sparse_map_r = mem_filter_sparse_map_r[`BUS_SIZE*filter_wr_count_r +: `BUS_SIZE];
+		filter_nonzero_data_r = mem_filter_non_zero_data_r[`BUS_SIZE*filter_wr_count_r +: `BUS_SIZE];
 	end
 
 	filter_wr_valid_r = 1'b0;
 	filter_wr_count_r = 0;
 endtask
 
-assign filter_sparse_map_r = mem_filter_sparse_map_r[`BUS_SIZE*filter_wr_count_r +: `BUS_SIZE];
-assign filter_nonzero_data_r = mem_filter_non_zero_data_r[`BUS_SIZE*filter_wr_count_r +: `BUS_SIZE];
+task wr_total_filter();
+	filter_wr_order_sel_r = 0;
+	repeat(`COMPUTE_UNIT_NUM) begin
+		filter_input_gen();
+		filter_wr_order_sel_r = filter_wr_order_sel_r + 1;
+	end
+endtask
+
 
 initial begin
 	 @(negedge rst_r) ;
 	 @(posedge clk_r) #1;
 	init_r = 1'b1;
 	rd_sparsemap_num_r = RD_SPARSEMAP_NUM - 1;
-	filter_wr_sel_r = 1'b0;
-	filter_wr_order_sel_r = 0;
-	repeat(`COMPUTE_UNIT_NUM) begin
-		filter_input_gen();
-		filter_wr_order_sel_r = filter_wr_order_sel_r + 1;
-	end
-
-	ifm_wr_sel_r = 1'b0;
-	ifm_input_gen();
-
-
 	acc_buf_sel_r = 0;
 	out_buf_sel_r = 0;
-	init_r = 1'b0;
+
+	fork
+		begin
+			filter_wr_sel_r = 1'b0;
+			wr_total_filter();
+		end
+		begin
+			ifm_wr_sel_r = 1'b0;
+			ifm_input_gen();
+		end
+	join
 
 	ifm_rd_sel_r = 1'b0;
 	filter_rd_sel_r = 1'b0;
+	init_r = 1'b0;
 
-	ifm_wr_sel_r = 1'b1;
-	ifm_input_gen();
-
+	fork
+		begin
+			filter_wr_sel_r = 1'b1;
+			wr_total_filter();
+		end
+		begin
+			ifm_wr_sel_r = 1'b1;
+			ifm_input_gen();
+		end
+	join
 end
 
 always @(posedge clk_r) begin
@@ -199,14 +218,15 @@ always @(posedge clk_r) begin
 		#1;
 		acc_buf_sel_r = acc_buf_sel_r + 1;
 		out_buf_sel_r = out_buf_sel_r + 1;
-		ifm_rd_sel_r = ~ifm_rd_sel_r;
-		ifm_wr_sel_r = ~ifm_wr_sel_r;
 	end
 end
 
 always @(posedge clk_r) begin
 	if (total_chunk_end_o) begin
-		#1; ifm_input_gen();
+		#1; 
+		ifm_rd_sel_r = ~ifm_rd_sel_r;
+		ifm_wr_sel_r = ~ifm_wr_sel_r;
+		ifm_input_gen();
 	end
 end
 
@@ -214,9 +234,14 @@ assign chunk_start_r = total_chunk_end_o;
 
 integer check_int = 0;
 always @(posedge clk_r) begin
-	if (total_chunk_end_o) begin
-		#1; check_int = check_int + 1;
-		if (check_int == 32) $finish;
+	if (total_chunk_end_o && (out_buf_sel_r == (`OUTPUT_BUF_NUM-1))) begin
+		#1; 
+		check_int = check_int + 1;
+		if (check_int == 2) $finish;
+
+		filter_rd_sel_r = ~filter_rd_sel_r;
+		filter_wr_sel_r = ~filter_wr_sel_r;
+		wr_total_filter();
 	end
 end
 
