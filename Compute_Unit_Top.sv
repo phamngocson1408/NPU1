@@ -48,7 +48,7 @@ module Compute_Unit_Top #(
 	,input filter_wr_sel_i
 	,input filter_rd_sel_i
 
-	,input init_i
+	,input run_valid_i
 	,input chunk_start_i
 	,input [$clog2(RD_SPARSEMAP_NUM)-1:0] rd_sparsemap_num_i
 
@@ -89,7 +89,7 @@ module Compute_Unit_Top #(
 		,.filter_wr_sel_i
 		,.filter_rd_sel_i
 		
-		,.init_i
+		,.run_valid_i
 		,.chunk_start_i
 		,.rd_sparsemap_num_i
 		

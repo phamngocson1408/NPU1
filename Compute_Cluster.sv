@@ -30,19 +30,19 @@ module Compute_Cluster #(
 	,input [`BUS_SIZE-1:0] ifm_sparsemap_i
 	,input [`BUS_SIZE*8-1:0] ifm_nonzero_data_i
 	,input ifm_wr_valid_i
-	,input [$clog2(COMPUTE_UNIT_NUM)-1:0] ifm_wr_count_i
+	,input [$clog2(`COMPUTE_UNIT_NUM)-1:0] ifm_wr_count_i
 	,input ifm_wr_sel_i
 	,input ifm_rd_sel_i
 
 	,input [`BUS_SIZE-1:0] filter_sparsemap_i
 	,input [`BUS_SIZE*8-1:0] filter_nonzero_data_i
 	,input filter_wr_valid_i
-	,input [$clog2(COMPUTE_UNIT_NUM)-1:0] filter_wr_count_i
+	,input [$clog2(`COMPUTE_UNIT_NUM)-1:0] filter_wr_count_i
 	,input filter_wr_sel_i
 	,input filter_rd_sel_i
 	,input [$clog2(`OUTPUT_BUF_NUM)-1:0] filter_wr_order_sel_i
 
-	,input init_i
+	,input run_valid_i
 	,input chunk_start_i
 	,input [$clog2(RD_SPARSEMAP_NUM)-1:0] rd_sparsemap_num_i
 
@@ -94,7 +94,7 @@ module Compute_Cluster #(
 			,.filter_wr_sel_i
 			,.filter_rd_sel_i
 
-			,.init_i
+			,.run_valid_i
 			,.chunk_start_i
 			,.rd_sparsemap_num_i
 

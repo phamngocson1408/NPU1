@@ -21,7 +21,7 @@
 
 
 module Prefix_Sum_v4 (
-	input [`PREFIX_SUM_SIZE:1] in_i
+	 input [`PREFIX_SUM_SIZE:1] in_i
 	,output [$clog2(`PREFIX_SUM_SIZE):0] out_o [`PREFIX_SUM_SIZE:1]
 );
 

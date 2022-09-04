@@ -53,7 +53,7 @@ logic filter_wr_sel_r;
 logic filter_rd_sel_r;
 logic [$clog2(`OUTPUT_BUF_NUM)-1:0] filter_wr_order_sel_r;
 
-logic init_r;
+logic run_valid_r;
 logic chunk_start_r;
 logic [$clog2(RD_SPARSEMAP_NUM)-1:0] rd_sparsemap_num_r;
 logic total_chunk_end_o;
@@ -83,7 +83,7 @@ Compute_Cluster u_Compute_Cluster (
 	,.filter_rd_sel_i(filter_rd_sel_r)	
 	,.filter_wr_order_sel_i(filter_wr_order_sel_r)	
 
-	,.init_i(init_r)
+	,.run_valid_i(run_valid_r)
 	,.chunk_start_i(chunk_start_r)
 	,.rd_sparsemap_num_i(rd_sparsemap_num_r)
 	,.total_chunk_end_o
@@ -181,7 +181,7 @@ endtask
 initial begin
 	 @(negedge rst_r) ;
 	 @(posedge clk_r) #1;
-	init_r = 1'b1;
+	run_valid_r = 1'b0;
 	rd_sparsemap_num_r = RD_SPARSEMAP_NUM - 1;
 	acc_buf_sel_r = 0;
 	out_buf_sel_r = 0;
@@ -199,7 +199,7 @@ initial begin
 
 	ifm_rd_sel_r = 1'b0;
 	filter_rd_sel_r = 1'b0;
-	init_r = 1'b0;
+	run_valid_r = 1'b1;
 
 	fork
 		begin
@@ -216,17 +216,17 @@ end
 always @(posedge clk_r) begin
 	if (total_chunk_end_o) begin
 		#1;
-		acc_buf_sel_r = acc_buf_sel_r + 1;
-		out_buf_sel_r = out_buf_sel_r + 1;
-	end
-end
-
-always @(posedge clk_r) begin
-	if (total_chunk_end_o) begin
-		#1; 
-		ifm_rd_sel_r = ~ifm_rd_sel_r;
-		ifm_wr_sel_r = ~ifm_wr_sel_r;
-		ifm_input_gen();
+		if (ifm_wr_valid_r) begin
+			run_valid_r = 1'b0;
+		end
+		else begin
+			run_valid_r = 1'b1;
+			acc_buf_sel_r = acc_buf_sel_r + 1;
+			out_buf_sel_r = out_buf_sel_r + 1;
+			ifm_rd_sel_r = ~ifm_rd_sel_r;
+			ifm_wr_sel_r = ~ifm_wr_sel_r;
+			ifm_input_gen();
+		end
 	end
 end
 
@@ -236,12 +236,18 @@ integer check_int = 0;
 always @(posedge clk_r) begin
 	if (total_chunk_end_o && (out_buf_sel_r == (`OUTPUT_BUF_NUM-1))) begin
 		#1; 
-		check_int = check_int + 1;
-		if (check_int == 2) $finish;
+		if (filter_wr_valid_r) begin
+			run_valid_r = 1'b0;
+		end
+		else begin
+			check_int = check_int + 1;
+			if (check_int == 2) $finish;
 
-		filter_rd_sel_r = ~filter_rd_sel_r;
-		filter_wr_sel_r = ~filter_wr_sel_r;
-		wr_total_filter();
+			run_valid_r = 1'b1;
+			filter_rd_sel_r = ~filter_rd_sel_r;
+			filter_wr_sel_r = ~filter_wr_sel_r;
+			wr_total_filter();
+		end
 	end
 end
 

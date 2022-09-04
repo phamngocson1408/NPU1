@@ -47,7 +47,7 @@ module Input_Selector_v2 #(
 	,input filter_wr_sel_i
 	,input filter_rd_sel_i
 
-	,input init_i
+	,input run_valid_i
 	,input chunk_start_i
 	,input [$clog2(RD_SPARSEMAP_NUM)-1:0] rd_sparsemap_num_i
 
@@ -122,12 +122,12 @@ module Input_Selector_v2 #(
 		,.rd_sparsemap_o(filter_sparsemap_w)
 	);
 
-	wire run_w = !init_i && (!chunk_end_r);
+	wire run_valid_w = run_valid_i && (!chunk_end_r);
 
 	Priority_Encoder_Top u_Priority_Encoder_Top (
 		 .rst_i
 		,.clk_i
-		,.valid_i(run_w)
+		,.valid_i(run_valid_w)
 `ifdef COMB_DAT_CHUNK
 		,.in1_i(rd_sparsemap_i)
 `else

@@ -37,9 +37,7 @@ module IFM_Input_Sel (
 	logic [$clog2(`MEM_SIZE):0] rd_data_base_addr_r;	
 	logic [$clog2(`PREFIX_SUM_SIZE):0] rd_data_addr_temp_w;	
 
-	Prefix_Sum_v4 #(
-		.PREFIX_SUM_SIZE(`PREFIX_SUM_SIZE)
-	) u_Prefix_Sum (
+	Prefix_Sum_v4 u_Prefix_Sum (
 		.in_i(rd_sparsemap_i)
 		,.out_o(prefix_sum_out_w)
 	);

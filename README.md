@@ -4,3 +4,4 @@
 20220902 - Simulate at 1GHz
 20220903 - Change to global parameters
 20220903-16:33 - To run multiple filter batches
+20220903-16:33 - Before adding shallow channels
