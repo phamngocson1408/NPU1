@@ -26,7 +26,7 @@ module IFM_Input_Sel (
 
 	,input [$clog2(`PREFIX_SUM_SIZE)-1:0] pri_enc_match_addr_i
 	,input pri_enc_end_i
-	,input chunk_end_i
+	,input chunk_start_i
 
 	,input [`PREFIX_SUM_SIZE-1:0] rd_sparsemap_i	
 	,output [$clog2(`MEM_SIZE):0] rd_addr_o
@@ -46,7 +46,7 @@ module IFM_Input_Sel (
 		if (rst_i) begin
 			rd_data_base_addr_r <= #1 {($clog2(`MEM_SIZE) + 1){1'b0}};
 		end
-		else if (chunk_end_i) begin
+		else if (chunk_start_i) begin
 			rd_data_base_addr_r <= #1 {($clog2(`MEM_SIZE) + 1){1'b0}};
 		end
 		else if (pri_enc_end_i) begin

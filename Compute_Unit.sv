@@ -21,8 +21,17 @@
 
 
 module Compute_Unit #(
-	 localparam WR_DAT_CYC_NUM = `MEM_SIZE/`BUS_SIZE
-	,localparam RD_SPARSEMAP_NUM = `MEM_SIZE/`PREFIX_SUM_SIZE
+`ifdef CHUNK_PADDING
+	localparam int WR_DAT_CYC_NUM =   (`CHANNEL_NUM > `MEM_SIZE) ?  `MEM_SIZE/`BUS_SIZE
+					: ((`CHANNEL_NUM % `BUS_SIZE)!=0) ? `CHANNEL_NUM/`BUS_SIZE + 1
+					: `CHANNEL_NUM/`BUS_SIZE
+	,localparam int RD_SPARSEMAP_NUM =   (`CHANNEL_NUM > `MEM_SIZE) ?  `MEM_SIZE/`PREFIX_SUM_SIZE
+					: ((`CHANNEL_NUM % `PREFIX_SUM_SIZE)!=0) ? `CHANNEL_NUM/`PREFIX_SUM_SIZE + 1
+					: `CHANNEL_NUM/`PREFIX_SUM_SIZE
+`else
+	localparam int WR_DAT_CYC_NUM = `MEM_SIZE/`BUS_SIZE
+	,localparam int RD_SPARSEMAP_NUM = `MEM_SIZE/`PREFIX_SUM_SIZE
+`endif
 )(
 	 input rst_i
 	,input clk_i

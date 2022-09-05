@@ -29,8 +29,17 @@ initial begin
 end
 
 //Instance
-localparam WR_DAT_CYC_NUM = `MEM_SIZE/`BUS_SIZE;
-localparam RD_SPARSEMAP_NUM = `MEM_SIZE/`PREFIX_SUM_SIZE;
+`ifdef CHUNK_PADDING
+localparam int WR_DAT_CYC_NUM =   (`CHANNEL_NUM > `MEM_SIZE) ?  `MEM_SIZE/`BUS_SIZE
+				: ((`CHANNEL_NUM % `BUS_SIZE)!=0) ? `CHANNEL_NUM/`BUS_SIZE + 1
+				: `CHANNEL_NUM/`BUS_SIZE;
+localparam int RD_SPARSEMAP_NUM =   (`CHANNEL_NUM > `MEM_SIZE) ?  `MEM_SIZE/`PREFIX_SUM_SIZE
+				: ((`CHANNEL_NUM % `PREFIX_SUM_SIZE)!=0) ? `CHANNEL_NUM/`PREFIX_SUM_SIZE + 1
+				: `CHANNEL_NUM/`PREFIX_SUM_SIZE;
+`else
+localparam int WR_DAT_CYC_NUM = `MEM_SIZE/`BUS_SIZE;
+localparam int RD_SPARSEMAP_NUM = `MEM_SIZE/`PREFIX_SUM_SIZE;
+`endif
 
 logic [`MEM_SIZE-1:0][7:0] mem_ifm_non_zero_data_r = {`MEM_SIZE{8'h00}};
 logic [`MEM_SIZE-1:0] mem_ifm_sparse_map_r ;
@@ -54,7 +63,7 @@ logic filter_rd_sel_r;
 logic [$clog2(`OUTPUT_BUF_NUM)-1:0] filter_wr_order_sel_r;
 
 logic run_valid_r;
-logic chunk_start_r;
+logic total_chunk_start_r;
 logic [$clog2(RD_SPARSEMAP_NUM)-1:0] rd_sparsemap_num_r;
 logic total_chunk_end_o;
 
@@ -62,6 +71,8 @@ logic [$clog2(`OUTPUT_BUF_NUM)-1:0] acc_buf_sel_r;
 logic [$clog2(`OUTPUT_BUF_NUM)-1:0] out_buf_sel_r;
 logic [$clog2(`COMPUTE_UNIT_NUM)-1:0] com_unit_out_buf_sel_r = 0;
 logic [`OUTPUT_BUF_SIZE-1:0] out_buf_dat_o;
+
+logic ifm_wr_last_w;
 
 
 Compute_Cluster u_Compute_Cluster (
@@ -84,7 +95,7 @@ Compute_Cluster u_Compute_Cluster (
 	,.filter_wr_order_sel_i(filter_wr_order_sel_r)	
 
 	,.run_valid_i(run_valid_r)
-	,.chunk_start_i(chunk_start_r)
+	,.chunk_start_i(total_chunk_start_r)
 	,.rd_sparsemap_num_i(rd_sparsemap_num_r)
 	,.total_chunk_end_o
 
@@ -101,7 +112,15 @@ task ifm_mem_gen();
 	integer low_bound = $urandom_range(10,3);
 
 	for (i=0; i<`MEM_SIZE; i=i+1) begin
+
+`ifdef CHUNK_PADDING
+		if (i < `CHANNEL_NUM)
+			data = $urandom_range(256,0);
+		else
+			data = 0;
+`else
 		data = $urandom_range(256,0);
+`endif
 
 		if (data > 10*low_bound) begin
 			mem_ifm_non_zero_data_r[j] = data;
@@ -138,7 +157,15 @@ task filter_mem_gen();
 	logic [7:0] data;
 
 	for (i=0; i<`MEM_SIZE; i=i+1) begin
+
+`ifdef CHUNK_PADDING
+		if (i < `CHANNEL_NUM)
+			data = $urandom_range(256,0);
+		else
+			data = 0;
+`else
 		data = $urandom_range(256,0);
+`endif
 
 		if (data > 50) begin
 			mem_filter_non_zero_data_r[j] = data;
@@ -216,7 +243,7 @@ end
 always @(posedge clk_r) begin
 	if (total_chunk_end_o) begin
 		#1;
-		if (ifm_wr_valid_r) begin
+		if (ifm_wr_valid_r && (!ifm_wr_last_w)) begin
 			run_valid_r = 1'b0;
 		end
 		else begin
@@ -229,8 +256,6 @@ always @(posedge clk_r) begin
 		end
 	end
 end
-
-assign chunk_start_r = total_chunk_end_o;
 
 integer check_int = 0;
 always @(posedge clk_r) begin
@@ -250,6 +275,9 @@ always @(posedge clk_r) begin
 		end
 	end
 end
+
+assign total_chunk_start_r = total_chunk_end_o && (!ifm_wr_valid_r);
+assign ifm_wr_last_w = ifm_wr_valid_r && (ifm_wr_count_r == (WR_DAT_CYC_NUM-1));
 
 
 endmodule
