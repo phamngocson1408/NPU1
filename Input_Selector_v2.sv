@@ -73,9 +73,10 @@ module Input_Selector_v2 #(
 	logic [`PREFIX_SUM_SIZE-1:0] filter_sparsemap_w;
 	logic [`PREFIX_SUM_SIZE-1:0] ifm_sparsemap_w;
 
-	logic [$clog2(RD_SPARSEMAP_NUM)-1:0] rd_sparsemap_addr_r;
+	logic [$clog2(RD_SPARSEMAP_NUM)-1:0] rd_sparsemap_addr_r, rd_sparsemap_addr_w;
 
-	logic run_valid_r;
+	logic run_valid_r, run_valid_w;
+	logic pri_enc_valid_w;
 
 `ifdef COMB_DAT_CHUNK
 	IFM_Input_Sel u_IFM_Input_sel (
@@ -106,7 +107,7 @@ module Input_Selector_v2 #(
 		,.pri_enc_end_i(pri_enc_last_w)
 		,.chunk_start_i(chunk_start_i)
 
-		,.rd_sparsemap_addr_i(rd_sparsemap_addr_r)
+		,.rd_sparsemap_addr_i(rd_sparsemap_addr_w)
 		,.rd_sparsemap_o(ifm_sparsemap_w)
 	);
 `endif
@@ -127,16 +128,16 @@ module Input_Selector_v2 #(
 		,.pri_enc_end_i(pri_enc_last_w)
 		,.chunk_start_i(chunk_start_i)
 
-		,.rd_sparsemap_addr_i(rd_sparsemap_addr_r)
+		,.rd_sparsemap_addr_i(rd_sparsemap_addr_w)
 		,.rd_sparsemap_o(filter_sparsemap_w)
 	);
 
-	wire run_valid_w = run_valid_i && run_valid_r;
+	assign pri_enc_valid_w = run_valid_i && run_valid_w;
 
 	Priority_Encoder_Top u_Priority_Encoder_Top (
 		 .rst_i
 		,.clk_i
-		,.valid_i(run_valid_w)
+		,.valid_i(pri_enc_valid_w)
 `ifdef COMB_DAT_CHUNK
 		,.in1_i(rd_sparsemap_i)
 `else
@@ -154,11 +155,11 @@ module Input_Selector_v2 #(
 		if (rst_i) begin
 			rd_sparsemap_addr_r <= #1 {($clog2(RD_SPARSEMAP_NUM)){1'b0}};
 		end
+		else if (pri_enc_last_w) begin
+			rd_sparsemap_addr_r <= #1 rd_sparsemap_addr_w + 1'b1;
+		end
 		else if (chunk_start_i) begin
 			rd_sparsemap_addr_r <= #1 {($clog2(RD_SPARSEMAP_NUM)){1'b0}};
-		end
-		else if (pri_enc_last_w) begin
-			rd_sparsemap_addr_r <= #1 rd_sparsemap_addr_r + 1'b1;
 		end
 	end
 
@@ -166,19 +167,23 @@ module Input_Selector_v2 #(
 		if (rst_i) begin
 			run_valid_r <= #1 1'b1;
 		end
-		else if (chunk_start_i) begin
-			run_valid_r <= #1 1'b1;
-		end
 		else if (chunk_end_o) begin
 			run_valid_r <= #1 1'b0;
 		end
+		else if (chunk_start_i) begin
+			run_valid_r <= #1 1'b1;
+		end
 	end
 
-	assign chunk_end_o = 	((rd_sparsemap_addr_r == rd_sparsemap_num_i) && pri_enc_last_w) 
-				|| (!run_valid_r);
+	assign run_valid_w = chunk_start_i || run_valid_r;
+
+	assign rd_sparsemap_addr_w = chunk_start_i ? {($clog2(RD_SPARSEMAP_NUM)){1'b0}} : rd_sparsemap_addr_r;
+
+	assign chunk_end_o = 	((rd_sparsemap_addr_w == rd_sparsemap_num_i) && pri_enc_last_w) 
+				|| (!run_valid_w);
 	
 `ifdef COMB_DAT_CHUNK
-	assign rd_sparsemap_addr_o = rd_sparsemap_addr_r;
+	assign rd_sparsemap_addr_o = rd_sparsemap_addr_w;
 `endif
 
 endmodule

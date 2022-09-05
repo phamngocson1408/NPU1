@@ -276,7 +276,16 @@ always @(posedge clk_r) begin
 	end
 end
 
-assign total_chunk_start_r = total_chunk_end_o && (!ifm_wr_valid_r);
+always_ff @(posedge clk_r) begin
+	if (rst_r)
+		total_chunk_start_r <= #1 1'b0;
+	else if (total_chunk_end_o && (!ifm_wr_valid_r))
+		total_chunk_start_r <= #1 1'b1;
+	else if (total_chunk_start_r)
+		total_chunk_start_r <= #1 1'b0;
+end
+
+//assign total_chunk_start_r = total_chunk_end_o && (!ifm_wr_valid_r);
 assign ifm_wr_last_w = ifm_wr_valid_r && (ifm_wr_count_r == (WR_DAT_CYC_NUM-1));
 
 

@@ -27,7 +27,6 @@ module MAC (
 	,input [`DAT_SIZE-1:0] in1_i
 	,input [`DAT_SIZE-1:0] in2_i
 	,input valid_i
-	,input chunk_end_i	// TODO: delete?
 
 	,input [`OUTPUT_BUF_SIZE-1:0] acc_dat_i	
 	,output acc_val_o

@@ -60,7 +60,7 @@ module Data_Chunk_Top #(
 
 	logic [$clog2(`PREFIX_SUM_SIZE):0] prefix_sum_out_w [`PREFIX_SUM_SIZE-1:0];
 
-	logic [$clog2(`MEM_SIZE):0] rd_data_base_addr_r;	
+	logic [$clog2(`MEM_SIZE):0] rd_data_base_addr_r, rd_data_base_addr_w;	
 	logic [$clog2(`PREFIX_SUM_SIZE):0] rd_data_addr_temp_w;	
 
 	Data_Chunk u_Data_Chunk_0 (
@@ -114,16 +114,18 @@ module Data_Chunk_Top #(
 		if (rst_i) begin
 			rd_data_base_addr_r <= #1 {($clog2(`MEM_SIZE) + 1){1'b0}};
 		end
+		else if (pri_enc_end_i) begin
+			rd_data_base_addr_r <= #1 rd_data_base_addr_w + prefix_sum_out_w[`PREFIX_SUM_SIZE-1];
+		end
 		else if (chunk_start_i) begin
 			rd_data_base_addr_r <= #1 {($clog2(`MEM_SIZE) + 1){1'b0}};
 		end
-		else if (pri_enc_end_i) begin
-			rd_data_base_addr_r <= #1 rd_data_base_addr_r + prefix_sum_out_w[`PREFIX_SUM_SIZE-1];
-		end
 	end
 
+	assign rd_data_base_addr_w = chunk_start_i ? {($clog2(`MEM_SIZE) + 1){1'b0}} : rd_data_base_addr_r;
+
 	assign rd_data_addr_temp_w = prefix_sum_out_w[pri_enc_match_addr_i];
-	assign rd_dat_addr_w = rd_data_base_addr_r + rd_data_addr_temp_w;
+	assign rd_dat_addr_w = rd_data_base_addr_w + rd_data_addr_temp_w;
 
 	assign wr_val_w[1] =   wr_sel_i  && wr_valid_i;
 	assign wr_val_w[0] = (!wr_sel_i) && wr_valid_i;

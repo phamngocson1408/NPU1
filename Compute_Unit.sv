@@ -121,7 +121,6 @@ module Compute_Unit #(
 `endif
 		,.in2_i(filter_data_w)
 		,.valid_i(data_valid_w)
-		,.chunk_end_i(chunk_end_o)
 		
 		,.acc_dat_i	
 		,.acc_val_o
