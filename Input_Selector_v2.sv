@@ -138,6 +138,7 @@ module Input_Selector_v2 #(
 		 .rst_i
 		,.clk_i
 		,.valid_i(pri_enc_valid_w)
+		,.chunk_start_i
 `ifdef COMB_DAT_CHUNK
 		,.in1_i(rd_sparsemap_i)
 `else

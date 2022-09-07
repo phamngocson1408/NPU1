@@ -36,9 +36,11 @@ localparam int WR_DAT_CYC_NUM =   (`CHANNEL_NUM > `MEM_SIZE) ?  `MEM_SIZE/`BUS_S
 localparam int RD_SPARSEMAP_NUM =   (`CHANNEL_NUM > `MEM_SIZE) ?  `MEM_SIZE/`PREFIX_SUM_SIZE
 				: ((`CHANNEL_NUM % `PREFIX_SUM_SIZE)!=0) ? `CHANNEL_NUM/`PREFIX_SUM_SIZE + 1
 				: `CHANNEL_NUM/`PREFIX_SUM_SIZE;
+localparam int CLUSTER_RUN_NUM = (`MEM_SIZE % `CHANNEL_NUM) ? `MEM_SIZE/`CHANNEL_NUM : `MEM_SIZE/`CHANNEL_NUM + 1;
 `else
 localparam int WR_DAT_CYC_NUM = `MEM_SIZE/`BUS_SIZE;
 localparam int RD_SPARSEMAP_NUM = `MEM_SIZE/`PREFIX_SUM_SIZE;
+localparam int CLUSTER_RUN_NUM = 1;
 `endif
 
 logic [`MEM_SIZE-1:0][7:0] mem_ifm_non_zero_data_r = {`MEM_SIZE{8'h00}};
@@ -62,8 +64,8 @@ logic filter_wr_sel_r;
 logic filter_rd_sel_r;
 logic [$clog2(`OUTPUT_BUF_NUM)-1:0] filter_wr_order_sel_r;
 
-logic run_valid_r;
-logic total_chunk_start_r;
+logic run_valid_r, run_valid_delay_r;
+logic total_chunk_start_r, total_chunk_start_w;
 logic [$clog2(RD_SPARSEMAP_NUM)-1:0] rd_sparsemap_num_r;
 logic total_chunk_end_o;
 
@@ -95,7 +97,7 @@ Compute_Cluster u_Compute_Cluster (
 	,.filter_wr_order_sel_i(filter_wr_order_sel_r)	
 
 	,.run_valid_i(run_valid_r)
-	,.chunk_start_i(total_chunk_start_r)
+	,.chunk_start_i(total_chunk_start_w)
 	,.rd_sparsemap_num_i(rd_sparsemap_num_r)
 	,.total_chunk_end_o
 
@@ -105,24 +107,28 @@ Compute_Cluster u_Compute_Cluster (
 	,.out_buf_dat_o
 );
 
-task ifm_mem_gen();
+task automatic ifm_mem_gen();
 	integer i;
-	logic [$clog2(`MEM_SIZE):0] j=0;
-	logic [7:0] data;
-	integer low_bound = $urandom_range(10,3);
+	integer j=0;
+	integer data;
+	integer valid_dat;
 
 	for (i=0; i<`MEM_SIZE; i=i+1) begin
 
 `ifdef CHUNK_PADDING
-		if (i < `CHANNEL_NUM)
-			data = $urandom_range(256,0);
-		else
+		if (i < `CHANNEL_NUM) begin
+			data = $urandom_range(256,1);
+			valid_dat = $urandom_range(100,0);
+		end
+		else begin
 			data = 0;
+			valid_dat = 100;
+		end
 `else
-		data = $urandom_range(256,0);
+		data = $urandom_range(256,1);
+		valid_dat = $urandom_range(100,0);
 `endif
-
-		if (data > 10*low_bound) begin
+		if (valid_dat <= `IFM_DENSE_RATE) begin
 			mem_ifm_non_zero_data_r[j] = data;
 			mem_ifm_sparse_map_r[i] = 1;
 			j = j+1;
@@ -151,23 +157,29 @@ task ifm_input_gen();
 	ifm_wr_count_r = 0;
 endtask
 
-task filter_mem_gen();
+task automatic filter_mem_gen();
 	integer i;
-	logic [$clog2(`MEM_SIZE):0] j=0;
-	logic [7:0] data;
+	integer j=0;
+	integer data;
+	integer valid_dat;
 
 	for (i=0; i<`MEM_SIZE; i=i+1) begin
 
 `ifdef CHUNK_PADDING
-		if (i < `CHANNEL_NUM)
-			data = $urandom_range(256,0);
-		else
+		if (i < `CHANNEL_NUM) begin
+			data = $urandom_range(256,1);
+			valid_dat = $urandom_range(100,0);
+		end
+		else begin
 			data = 0;
+			valid_dat = 100;
+		end
 `else
-		data = $urandom_range(256,0);
+		data = $urandom_range(256,1);
+		valid_dat = $urandom_range(100,0);
 `endif
 
-		if (data > 50) begin
+		if (valid_dat <= `FILTER_DENSE_RATE) begin
 			mem_filter_non_zero_data_r[j] = data;
 			mem_filter_sparse_map_r[i] = 1;
 			j = j+1;
@@ -257,7 +269,7 @@ always @(posedge clk_r) begin
 	end
 end
 
-integer check_int = 0;
+integer cluster_run_num = 0;
 always @(posedge clk_r) begin
 	if (total_chunk_end_o && (out_buf_sel_r == (`OUTPUT_BUF_NUM-1))) begin
 		#1; 
@@ -265,8 +277,8 @@ always @(posedge clk_r) begin
 			run_valid_r = 1'b0;
 		end
 		else begin
-			check_int = check_int + 1;
-			if (check_int == 2) $finish;
+			cluster_run_num = cluster_run_num + 1;
+			if (cluster_run_num == CLUSTER_RUN_NUM) $finish;
 
 			run_valid_r = 1'b1;
 			filter_rd_sel_r = ~filter_rd_sel_r;
@@ -278,14 +290,22 @@ end
 
 always_ff @(posedge clk_r) begin
 	if (rst_r)
+		run_valid_delay_r <= #1 1'b0;
+	else
+		run_valid_delay_r <= #1 run_valid_r;
+end
+
+always_ff @(posedge clk_r) begin
+	if (rst_r)
 		total_chunk_start_r <= #1 1'b0;
-	else if (total_chunk_end_o && (!ifm_wr_valid_r))
+	else if (total_chunk_end_o)
 		total_chunk_start_r <= #1 1'b1;
 	else if (total_chunk_start_r)
 		total_chunk_start_r <= #1 1'b0;
 end
 
-//assign total_chunk_start_r = total_chunk_end_o && (!ifm_wr_valid_r);
+assign total_chunk_start_w = run_valid_r && (total_chunk_start_r || (run_valid_r && (!run_valid_delay_r)));
+
 assign ifm_wr_last_w = ifm_wr_valid_r && (ifm_wr_count_r == (WR_DAT_CYC_NUM-1));
 
 

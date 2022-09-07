@@ -21,7 +21,13 @@
 
 
 module Dat_Chunk_Comb #(
-	 localparam WR_DAT_CYC_NUM = `MEM_SIZE/`BUS_SIZE
+`ifdef CHUNK_PADDING
+	localparam int WR_DAT_CYC_NUM =   (`CHANNEL_NUM > `MEM_SIZE) ?  `MEM_SIZE/`BUS_SIZE
+					: ((`CHANNEL_NUM % `BUS_SIZE)!=0) ? `CHANNEL_NUM/`BUS_SIZE + 1
+					: `CHANNEL_NUM/`BUS_SIZE
+`else
+	localparam int WR_DAT_CYC_NUM = `MEM_SIZE/`BUS_SIZE
+`endif
 )(
 	 input rst_i
 	,input clk_i

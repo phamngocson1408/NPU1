@@ -24,6 +24,7 @@ module Priority_Encoder_Top (
 	 input rst_i
 	,input clk_i
 	,input valid_i
+	,input chunk_start_i
 	,input [`PREFIX_SUM_SIZE-1:0] in1_i
 	,input [`PREFIX_SUM_SIZE-1:0] in2_i
 
@@ -50,34 +51,12 @@ module Priority_Encoder_Top (
 	        ,.out_o(pri_enc_o_w)
 	);
 	
-	localparam INPUT_CHANGE = 0;
-	localparam FLY = 1;
-	logic  state_r;
-	
-	always_ff @(posedge clk_i) begin
-		if (rst_i) begin
-			state_r <= #1 INPUT_CHANGE;
-		end
-		else if (valid_i) begin
-			if ((state_r == INPUT_CHANGE)) begin
-				if (!pri_enc_last_o) begin
-					state_r <= #1 FLY;
-				end
-			end
-			else begin	// FLY
-				if (pri_enc_last_o) begin
-					state_r <= #1 INPUT_CHANGE;
-				end
-			end
-		end
-	end
-
 	always_ff @(posedge clk_i) begin
 		if (rst_i) begin
 			pri_enc_i_r <= #1 {`PREFIX_SUM_SIZE{1'b0}};
 		end
 		else if (valid_i) begin
-			if ((state_r == INPUT_CHANGE)) begin
+			if (chunk_start_i) begin
 				pri_enc_i_r <= #1 and_gate_out;
 			end
 
@@ -91,11 +70,12 @@ module Priority_Encoder_Top (
 		pri_enc_next_w[pri_enc_o_w[$clog2(`PREFIX_SUM_SIZE)-1:0]] = 0;
 	end
 	
-	assign pri_enc_i_w = 	  !valid_i ? {`PREFIX_SUM_SIZE{1'b1}}
-				: (state_r == INPUT_CHANGE) ? and_gate_out 
-				: pri_enc_i_r;
+	assign pri_enc_i_w = chunk_start_i ? and_gate_out : pri_enc_i_r;
+
 	assign match_addr_o = pri_enc_o_w[$clog2(`PREFIX_SUM_SIZE)-1:0];
+
 	assign valid_o = (pri_enc_o_w != `PREFIX_SUM_SIZE) && valid_i;
+
 	assign pri_enc_last_o = (~|pri_enc_next_w) && valid_i;
 
 endmodule
