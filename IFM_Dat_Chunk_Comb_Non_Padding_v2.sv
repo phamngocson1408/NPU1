@@ -86,7 +86,7 @@ module IFM_Dat_Chunk_Comb_Non_Padding_v2 #(
 	always_comb begin
 		for (integer i=0; i<2; i=i+1) begin
 			for (integer j=0; j<`COMPUTE_UNIT_NUM; j=j+1) begin
-				rd_sparsemap_o_w[i][j] = {`PREFIX_SUM_SIZE{1'b0}};;
+				rd_sparsemap_o_w[i][j] = {`PREFIX_SUM_SIZE{1'b0}};
 				for (integer k=1; k<PARAM_RD_SPARSEMAP_NUM-1; k = k+1) begin
 					if (rd_sparsemap_addr_i[j] == k)
 						rd_sparsemap_o_w[i][j] = rd_sparsemap_w[i][`PREFIX_SUM_SIZE*k +: (`PREFIX_SUM_SIZE*2)];
@@ -102,9 +102,9 @@ module IFM_Dat_Chunk_Comb_Non_Padding_v2 #(
 	always_comb begin
 		for (integer i=0; i<`COMPUTE_UNIT_NUM; i=i+1) begin
 			if (rd_sel_w[i])
-				rd_sparsemap_o_comb_w[i] = rd_sparsemap_o_w[1];
+				rd_sparsemap_o_comb_w[i] = rd_sparsemap_o_w[1][i];
 			else
-				rd_sparsemap_o_comb_w[i] = rd_sparsemap_o_w[0];
+				rd_sparsemap_o_comb_w[i] = rd_sparsemap_o_w[0][i];
 		end
 	end
 
