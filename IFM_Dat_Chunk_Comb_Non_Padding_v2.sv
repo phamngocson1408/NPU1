@@ -22,11 +22,11 @@
 
 module IFM_Dat_Chunk_Comb_Non_Padding_v2 #(
 `ifdef CHUNK_PADDING
-	 localparam int PARAM_INIT_WR_DAT_CYC_NUM = `MEM_SIZE/`BUS_SIZE
-	,localparam int PARAM_INIT_RD_SPARSEMAP_NUM = `MEM_SIZE/`PREFIX_SUM_SIZE
+	 localparam int PARAM_WR_DAT_CYC_NUM = `MEM_SIZE/`BUS_SIZE
+	,localparam int PARAM_RD_SPARSEMAP_NUM = `MEM_SIZE/`PREFIX_SUM_SIZE
 `else
-	 localparam int PARAM_INIT_WR_DAT_CYC_NUM = `MEM_SIZE/`BUS_SIZE
-	,localparam int PARAM_INIT_RD_SPARSEMAP_NUM = `MEM_SIZE/`PREFIX_SUM_SIZE
+	 localparam int PARAM_WR_DAT_CYC_NUM = `MEM_SIZE/`BUS_SIZE
+	,localparam int PARAM_RD_SPARSEMAP_NUM = `MEM_SIZE/`PREFIX_SUM_SIZE
 `endif
 )(
 	 input rst_i
@@ -35,7 +35,7 @@ module IFM_Dat_Chunk_Comb_Non_Padding_v2 #(
 	,input [`BUS_SIZE-1:0] wr_sparsemap_i
 	,input [`BUS_SIZE-1:0][7:0] wr_nonzero_data_i 
 	,input wr_valid_i
-	,input [$clog2(PARAM_INIT_WR_DAT_CYC_NUM)-1:0] wr_count_i
+	,input [$clog2(PARAM_WR_DAT_CYC_NUM)-1:0] wr_count_i
 	,input wr_sel_i
 	,input rd_sel_i
 
@@ -46,7 +46,7 @@ module IFM_Dat_Chunk_Comb_Non_Padding_v2 #(
 	,input [`COMPUTE_UNIT_NUM-1:0][$clog2(`MEM_SIZE):0] rd_addr_i
 	,output logic [`COMPUTE_UNIT_NUM-1:0][7:0] rd_data_o
 
-	,input [`COMPUTE_UNIT_NUM-1:0][$clog2(PARAM_INIT_RD_SPARSEMAP_NUM)-1:0] rd_sparsemap_addr_i
+	,input [`COMPUTE_UNIT_NUM-1:0][$clog2(PARAM_RD_SPARSEMAP_NUM)-1:0] rd_sparsemap_addr_i
 	,output logic [`COMPUTE_UNIT_NUM-1:0][`PREFIX_SUM_SIZE-1:0] rd_sparsemap_o	
 );
 	
@@ -87,12 +87,12 @@ module IFM_Dat_Chunk_Comb_Non_Padding_v2 #(
 		for (integer i=0; i<2; i=i+1) begin
 			for (integer j=0; j<`COMPUTE_UNIT_NUM; j=j+1) begin
 				rd_sparsemap_o_w[i][j] = {`PREFIX_SUM_SIZE{1'b0}};;
-				for (integer k=1; k<PARAM_INIT_RD_SPARSEMAP_NUM-1; k = k+1) begin
+				for (integer k=1; k<PARAM_RD_SPARSEMAP_NUM-1; k = k+1) begin
 					if (rd_sparsemap_addr_i[j] == k)
 						rd_sparsemap_o_w[i][j] = rd_sparsemap_w[i][`PREFIX_SUM_SIZE*k +: (`PREFIX_SUM_SIZE*2)];
 				end
-				if (rd_sparsemap_addr_i[j] == (PARAM_INIT_RD_SPARSEMAP_NUM-1))
-					rd_sparsemap_o_w[i][j] = {rd_sparsemap_w[i][`PREFIX_SUM_SIZE*(PARAM_INIT_RD_SPARSEMAP_NUM-1) +: `PREFIX_SUM_SIZE],{`PREFIX_SUM_SIZE{1'b0}}};
+				if (rd_sparsemap_addr_i[j] == (PARAM_RD_SPARSEMAP_NUM-1))
+					rd_sparsemap_o_w[i][j] = {rd_sparsemap_w[i][`PREFIX_SUM_SIZE*(PARAM_RD_SPARSEMAP_NUM-1) +: `PREFIX_SUM_SIZE],{`PREFIX_SUM_SIZE{1'b0}}};
 				if (rd_sparsemap_addr_i[j] == 0)
 					rd_sparsemap_o_w[i][j] = {{`PREFIX_SUM_SIZE{1'b0}},rd_sparsemap_w[i][`PREFIX_SUM_SIZE*0 +: `PREFIX_SUM_SIZE]};
 			end
@@ -140,7 +140,7 @@ module IFM_Dat_Chunk_Comb_Non_Padding_v2 #(
 				rd_sel_r[i] <= #1 1'b0;
 			end
 			else begin
-				if ((rd_sparsemap_addr_i[i] == (PARAM_INIT_RD_SPARSEMAP_NUM-1)) && pri_enc_last_i[i])
+				if ((rd_sparsemap_addr_i[i] == (PARAM_RD_SPARSEMAP_NUM-1)) && pri_enc_last_i[i])
 					rd_sel_r[i] <= #1 ~rd_sel_i;
 				else
 					rd_sel_r[i] <= #1 rd_sel_w[i];
