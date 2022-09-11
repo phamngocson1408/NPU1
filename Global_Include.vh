@@ -2,7 +2,7 @@
 `define CYCLE 10
 
 `define COMB_DAT_CHUNK
-//`define CHUNK_PADDING
+`define CHUNK_PADDING
 
 `ifndef COMB_DAT_CHUNK
 	`define CHUNK_PADDING

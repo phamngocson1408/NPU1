@@ -34,6 +34,7 @@ localparam int PARAM_SIM_WR_DAT_CYC_NUM = (`CHANNEL_NUM > `MEM_SIZE) ?  `MEM_SIZ
 					: ((`CHANNEL_NUM % `BUS_SIZE)!=0) ? `CHANNEL_NUM/`BUS_SIZE + 1
 					: `CHANNEL_NUM/`BUS_SIZE;
 localparam int PARAM_SIM_RD_SPARSEMAP_NUM = (`CHANNEL_NUM > `MEM_SIZE) ?  `MEM_SIZE/`PREFIX_SUM_SIZE
+					: ((`CHANNEL_NUM % `PREFIX_SUM_SIZE)!=0) ? `CHANNEL_NUM/`PREFIX_SUM_SIZE + 1
 					: `CHANNEL_NUM/`PREFIX_SUM_SIZE;
 localparam int PARAM_SIM_FILTER_REF_NUM = `MEM_SIZE/`CHANNEL_NUM;
 localparam int PARAM_SIM_IFM_SHIFT_NUM = 0;
@@ -309,9 +310,7 @@ always @(posedge clk_i) begin
 end
 
 always @(posedge clk_i) begin
-	if (rst_i) begin
-		rd_sparsemap_last_i = PARAM_SIM_RD_SPARSEMAP_NUM - 1;
-	end
+	rd_sparsemap_last_i = PARAM_SIM_RD_SPARSEMAP_NUM - 1;
 end
 
 `else
