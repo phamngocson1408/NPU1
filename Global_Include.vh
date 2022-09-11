@@ -17,7 +17,7 @@
 `define DAT_SIZE		8	//bits 
 `define PARTIAL_OUT_SIZE	32	//bits 
 
-`define CHANNEL_NUM 		3
-`define IFM_DENSE_RATE 		75
-`define FILTER_DENSE_RATE 	75
+`define CHANNEL_NUM 		7
+`define IFM_DENSE_RATE 		30
+`define FILTER_DENSE_RATE 	30
 

@@ -38,6 +38,8 @@ module Priority_Encoder_Top (
 	logic [`PREFIX_SUM_SIZE-1:0] pri_enc_i_w;
 	logic [$clog2(`PREFIX_SUM_SIZE):0] pri_enc_o_w;
 	logic [`PREFIX_SUM_SIZE-1:0] pri_enc_next_w;
+
+	logic pri_enc_start_r;
 	
 	
 	And_Gate u_And_Gate (
@@ -56,7 +58,7 @@ module Priority_Encoder_Top (
 			pri_enc_i_r <= #1 {`PREFIX_SUM_SIZE{1'b0}};
 		end
 		else if (valid_i) begin
-			if (chunk_start_i) begin
+			if (chunk_start_i || pri_enc_start_r) begin
 				pri_enc_i_r <= #1 and_gate_out;
 			end
 
@@ -64,13 +66,24 @@ module Priority_Encoder_Top (
 		end
 	end
 
+	always_ff @(posedge clk_i) begin
+		if (rst_i) begin
+			pri_enc_start_r <= #1 1'b0;
+		end
+		else if (valid_i) begin
+			if (pri_enc_last_o)
+				pri_enc_start_r <= #1 1'b1;
+			else if (pri_enc_start_r)
+				pri_enc_start_r <= #1 1'b0;
+		end
+	end
 
 	always_comb begin
 		pri_enc_next_w = pri_enc_i_w;	
 		pri_enc_next_w[pri_enc_o_w[$clog2(`PREFIX_SUM_SIZE)-1:0]] = 0;
 	end
 	
-	assign pri_enc_i_w = chunk_start_i ? and_gate_out : pri_enc_i_r;
+	assign pri_enc_i_w = (chunk_start_i || pri_enc_start_r) ? and_gate_out : pri_enc_i_r;
 
 	assign match_addr_o = pri_enc_o_w[$clog2(`PREFIX_SUM_SIZE)-1:0];
 
