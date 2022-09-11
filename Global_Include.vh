@@ -2,7 +2,11 @@
 `define CYCLE 10
 
 `define COMB_DAT_CHUNK
-`define CHUNK_PADDING
+//`define CHUNK_PADDING
+
+`ifndef COMB_DAT_CHUNK
+	`define CHUNK_PADDING
+`endif
 
 `define MEM_SIZE		128	//Bytes
 `define BUS_SIZE		8	//Bytes

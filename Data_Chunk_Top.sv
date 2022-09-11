@@ -22,15 +22,11 @@
 
 module Data_Chunk_Top #(
 `ifdef CHUNK_PADDING
-	localparam int WR_DAT_CYC_NUM =   (`CHANNEL_NUM > `MEM_SIZE) ?  `MEM_SIZE/`BUS_SIZE
-					: ((`CHANNEL_NUM % `BUS_SIZE)!=0) ? `CHANNEL_NUM/`BUS_SIZE + 1
-					: `CHANNEL_NUM/`BUS_SIZE
-	,localparam int RD_SPARSEMAP_NUM =   (`CHANNEL_NUM > `MEM_SIZE) ?  `MEM_SIZE/`PREFIX_SUM_SIZE
-					: ((`CHANNEL_NUM % `PREFIX_SUM_SIZE)!=0) ? `CHANNEL_NUM/`PREFIX_SUM_SIZE + 1
-					: `CHANNEL_NUM/`PREFIX_SUM_SIZE
+	 localparam int PARAM_WR_DAT_CYC_NUM = `MEM_SIZE/`BUS_SIZE
+	,localparam int PARAM_RD_SPARSEMAP_NUM = `MEM_SIZE/`PREFIX_SUM_SIZE
 `else
-	localparam int WR_DAT_CYC_NUM = `MEM_SIZE/`BUS_SIZE
-	,localparam int RD_SPARSEMAP_NUM = `MEM_SIZE/`PREFIX_SUM_SIZE
+	 localparam int PARAM_WR_DAT_CYC_NUM = `MEM_SIZE/`BUS_SIZE
+	,localparam int PARAM_RD_SPARSEMAP_NUM = `MEM_SIZE/`PREFIX_SUM_SIZE
 `endif
 )(
 	 input rst_i
@@ -38,7 +34,7 @@ module Data_Chunk_Top #(
 	,input [`BUS_SIZE-1:0] wr_sparsemap_i
 	,input [`BUS_SIZE-1:0][7:0] wr_nonzero_data_i 
 	,input wr_valid_i
-	,input [$clog2(WR_DAT_CYC_NUM)-1:0] wr_count_i
+	,input [$clog2(PARAM_WR_DAT_CYC_NUM)-1:0] wr_count_i
 	,input wr_sel_i
 
 	,input rd_sel_i
@@ -48,7 +44,7 @@ module Data_Chunk_Top #(
 	,input pri_enc_end_i
 	,input chunk_start_i
 
-	,input [$clog2(RD_SPARSEMAP_NUM)-1:0] rd_sparsemap_addr_i
+	,input [$clog2(PARAM_RD_SPARSEMAP_NUM)-1:0] rd_sparsemap_addr_i
 	,output logic [`PREFIX_SUM_SIZE-1:0] rd_sparsemap_o
 
 );

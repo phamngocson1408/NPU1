@@ -1,4 +1,4 @@
-`timescale 1ns / 1ps
+`include "Global_Include.vh"
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
 // Engineer: 
@@ -22,11 +22,9 @@
 
 module Dat_Chunk_Comb #(
 `ifdef CHUNK_PADDING
-	localparam int WR_DAT_CYC_NUM =   (`CHANNEL_NUM > `MEM_SIZE) ?  `MEM_SIZE/`BUS_SIZE
-					: ((`CHANNEL_NUM % `BUS_SIZE)!=0) ? `CHANNEL_NUM/`BUS_SIZE + 1
-					: `CHANNEL_NUM/`BUS_SIZE
+	localparam int PARAM_INIT_WR_DAT_CYC_NUM = `MEM_SIZE/`BUS_SIZE
 `else
-	localparam int WR_DAT_CYC_NUM = `MEM_SIZE/`BUS_SIZE
+	localparam int PARAM_INIT_WR_DAT_CYC_NUM = `MEM_SIZE/`BUS_SIZE
 `endif
 )(
 	 input rst_i
@@ -34,7 +32,7 @@ module Dat_Chunk_Comb #(
 	,input [`BUS_SIZE-1:0] wr_sparsemap_i
 	,input [`BUS_SIZE-1:0][7:0] wr_nonzero_data_i 	//Bandwidth = 128 Bytes
 	,input wr_valid_i
-	,input [$clog2(WR_DAT_CYC_NUM)-1:0] wr_count_i
+	,input [$clog2(PARAM_INIT_WR_DAT_CYC_NUM)-1:0] wr_count_i
 
 	,output [`MEM_SIZE:1][7:0] rd_nonzero_data_o
 	,output logic [`MEM_SIZE-1:0] rd_sparsemap_o	
@@ -51,7 +49,7 @@ module Dat_Chunk_Comb #(
 			mem_nonzero_data_r <= #1 {`MEM_SIZE{8'h00}};
 		end
 		else if (wr_valid_i) begin
-			for (integer i=0; i<WR_DAT_CYC_NUM; i=i+1) begin
+			for (integer i=0; i<PARAM_INIT_WR_DAT_CYC_NUM; i=i+1) begin
 				if (wr_count_i == i) begin
 					mem_sparsemap_r[`BUS_SIZE*i +: `BUS_SIZE] <= #1 wr_sparsemap_i;
 					mem_nonzero_data_r[(`BUS_SIZE*i+1) +: `BUS_SIZE] <= #1 wr_nonzero_data_i;

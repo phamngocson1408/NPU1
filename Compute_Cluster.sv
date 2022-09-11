@@ -22,15 +22,11 @@
 
 module Compute_Cluster #(
 `ifdef CHUNK_PADDING
-	localparam int WR_DAT_CYC_NUM =   (`CHANNEL_NUM > `MEM_SIZE) ?  `MEM_SIZE/`BUS_SIZE
-					: ((`CHANNEL_NUM % `BUS_SIZE)!=0) ? `CHANNEL_NUM/`BUS_SIZE + 1
-					: `CHANNEL_NUM/`BUS_SIZE
-	,localparam int RD_SPARSEMAP_NUM =   (`CHANNEL_NUM > `MEM_SIZE) ?  `MEM_SIZE/`PREFIX_SUM_SIZE
-					: ((`CHANNEL_NUM % `PREFIX_SUM_SIZE)!=0) ? `CHANNEL_NUM/`PREFIX_SUM_SIZE + 1
-					: `CHANNEL_NUM/`PREFIX_SUM_SIZE
+	 localparam int PARAM_WR_DAT_CYC_NUM = `MEM_SIZE/`BUS_SIZE
+	,localparam int PARAM_RD_SPARSEMAP_NUM = `MEM_SIZE/`PREFIX_SUM_SIZE
 `else
-	localparam int WR_DAT_CYC_NUM = `MEM_SIZE/`BUS_SIZE
-	,localparam int RD_SPARSEMAP_NUM = `MEM_SIZE/`PREFIX_SUM_SIZE
+	 localparam int PARAM_WR_DAT_CYC_NUM = `MEM_SIZE/`BUS_SIZE
+	,localparam int PARAM_RD_SPARSEMAP_NUM = `MEM_SIZE/`PREFIX_SUM_SIZE
 `endif
 )(
 	 input rst_i
@@ -39,21 +35,26 @@ module Compute_Cluster #(
 	,input [`BUS_SIZE-1:0] ifm_sparsemap_i
 	,input [`BUS_SIZE*8-1:0] ifm_nonzero_data_i
 	,input ifm_wr_valid_i
-	,input [$clog2(`COMPUTE_UNIT_NUM)-1:0] ifm_wr_count_i
+	,input [$clog2(PARAM_WR_DAT_CYC_NUM)-1:0] ifm_wr_count_i
 	,input ifm_wr_sel_i
 	,input ifm_rd_sel_i
 
 	,input [`BUS_SIZE-1:0] filter_sparsemap_i
 	,input [`BUS_SIZE*8-1:0] filter_nonzero_data_i
 	,input filter_wr_valid_i
-	,input [$clog2(`COMPUTE_UNIT_NUM)-1:0] filter_wr_count_i
+	,input [$clog2(PARAM_WR_DAT_CYC_NUM)-1:0] filter_wr_count_i
 	,input filter_wr_sel_i
 	,input filter_rd_sel_i
 	,input [$clog2(`OUTPUT_BUF_NUM)-1:0] filter_wr_order_sel_i
 
 	,input run_valid_i
-	,input chunk_start_i
-	,input [$clog2(RD_SPARSEMAP_NUM)-1:0] rd_sparsemap_num_i
+	,input total_chunk_start_i
+	,input [$clog2(PARAM_RD_SPARSEMAP_NUM)-1:0] rd_sparsemap_last_i
+	
+`ifndef CHUNK_PADDING
+	,input [$clog2(`PREFIX_SUM_SIZE)-1:0] shift_left_i
+	,input [$clog2(PARAM_RD_SPARSEMAP_NUM)-1:0] rd_sparsemap_step_i
+`endif
 
 	,output total_chunk_end_o
 
@@ -64,17 +65,21 @@ module Compute_Cluster #(
 	,output [`OUTPUT_BUF_SIZE-1:0] out_buf_dat_o
 );
 
-	logic [`COMPUTE_UNIT_NUM-1:0] ifm_wr_ready_w;
 	logic [`COMPUTE_UNIT_NUM-1:0] filter_wr_valid_w;
-	logic [`COMPUTE_UNIT_NUM-1:0] filter_wr_ready_w;
 	logic [`COMPUTE_UNIT_NUM-1:0] chunk_end_w;
 	logic [`COMPUTE_UNIT_NUM-1:0][`OUTPUT_BUF_SIZE-1:0] out_buf_dat_w;
 
 `ifdef COMB_DAT_CHUNK
 	logic [`COMPUTE_UNIT_NUM-1:0][$clog2(`MEM_SIZE):0] rd_addr_w;
 	logic [`COMPUTE_UNIT_NUM-1:0][7:0] rd_data_w;
-	logic [`COMPUTE_UNIT_NUM-1:0][$clog2(RD_SPARSEMAP_NUM)-1:0] rd_sparsemap_addr_w;
+//	logic [`COMPUTE_UNIT_NUM-1:0][7:0] rd_data_non_padding_w;
+	logic [`COMPUTE_UNIT_NUM-1:0][$clog2(PARAM_RD_SPARSEMAP_NUM)-1:0] rd_sparsemap_addr_w;
 	logic [`COMPUTE_UNIT_NUM-1:0][`PREFIX_SUM_SIZE-1:0] rd_sparsemap_w;
+//	logic [`COMPUTE_UNIT_NUM-1:0][`PREFIX_SUM_SIZE-1:0] rd_sparsemap_non_padding_w;
+`endif
+
+`ifndef CHUNK_PADDING
+	logic [`COMPUTE_UNIT_NUM-1:0] pri_enc_last_w;
 `endif
 
 	genvar i;
@@ -104,8 +109,14 @@ module Compute_Cluster #(
 			,.filter_rd_sel_i
 
 			,.run_valid_i
-			,.chunk_start_i
-			,.rd_sparsemap_num_i
+			,.chunk_start_i(total_chunk_start_i)
+			,.rd_sparsemap_last_i
+
+`ifndef CHUNK_PADDING
+			,.pri_enc_last_o(pri_enc_last_w[i])
+			,.shift_left_i
+			,.rd_sparsemap_step_i
+`endif
 
 			,.chunk_end_o(chunk_end_w[i])
 
@@ -124,6 +135,7 @@ module Compute_Cluster #(
 	assign out_buf_dat_o = out_buf_dat_w[com_unit_out_buf_sel_i];
 
 `ifdef COMB_DAT_CHUNK
+`ifdef CHUNK_PADDING
 	IFM_Dat_Chunk_Comb u_IFM_Dat_Chunk_Comb (
 		 .rst_i
 		,.clk_i
@@ -141,6 +153,30 @@ module Compute_Cluster #(
 		,.rd_sparsemap_addr_i(rd_sparsemap_addr_w)
 		,.rd_sparsemap_o(rd_sparsemap_w)	
 	);
+
+`else
+	IFM_Dat_Chunk_Comb_Non_Padding_v2 u_IFM_Dat_Chunk_Comb_Non_Padding (
+		 .rst_i
+		,.clk_i
+
+		,.wr_sparsemap_i(ifm_sparsemap_i)
+		,.wr_nonzero_data_i(ifm_nonzero_data_i)
+		,.wr_valid_i(ifm_wr_valid_i)
+		,.wr_count_i(ifm_wr_count_i)
+		,.wr_sel_i(ifm_wr_sel_i)
+		,.rd_sel_i(ifm_rd_sel_i)
+
+		,.chunk_start_i(total_chunk_start_i)
+		,.shift_left_i
+		,.pri_enc_last_i(pri_enc_last_w)
+
+		,.rd_addr_i(rd_addr_w)
+		,.rd_data_o(rd_data_w)
+
+		,.rd_sparsemap_addr_i(rd_sparsemap_addr_w)
+		,.rd_sparsemap_o(rd_sparsemap_w)	
+	);
+`endif
 `endif
 
 endmodule

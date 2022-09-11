@@ -8,3 +8,4 @@
 20220904 - Before moving chunk_start_i to the fist cycle of chunk
 20220904-16:27 - After moving chunk_start_i to the fist cycle of chunk
 20220907 - Before combining multiple thin channels
+20220911 - After combining multiple thin channels
