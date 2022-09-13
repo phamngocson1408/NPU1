@@ -256,7 +256,7 @@ initial begin
 	ifm_rd_sel_i = 1'b0;
 	filter_rd_sel_i = 1'b0;
 	run_valid_i = 1'b1;
-
+`ifdef CHUNK_PADDING
 	fork
 		begin
 			filter_wr_sel_i = 1'b1;
@@ -267,6 +267,10 @@ initial begin
 			ifm_input_gen();
 		end
 	join
+`else
+	ifm_wr_sel_i = 1'b1;
+	ifm_input_gen();
+`endif
 end
 
 // Re-generate IFM and Filter after chunk end
