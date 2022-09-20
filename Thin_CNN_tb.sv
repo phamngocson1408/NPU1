@@ -30,22 +30,22 @@ end
 
 //Instance
 `ifdef CHUNK_PADDING
-localparam int PARAM_SIM_WR_DAT_CYC_NUM = (`CHANNEL_NUM > `MEM_SIZE) ?  `MEM_SIZE/`BUS_SIZE
+localparam int SIM_WR_DAT_CYC_NUM = (`CHANNEL_NUM > `MEM_SIZE) ?  `MEM_SIZE/`BUS_SIZE
 					: ((`CHANNEL_NUM % `BUS_SIZE)!=0) ? `CHANNEL_NUM/`BUS_SIZE + 1
 					: `CHANNEL_NUM/`BUS_SIZE;
-localparam int PARAM_SIM_RD_SPARSEMAP_NUM = (`CHANNEL_NUM > `MEM_SIZE) ?  `MEM_SIZE/`PREFIX_SUM_SIZE
+localparam int SIM_RD_SPARSEMAP_NUM = (`CHANNEL_NUM > `MEM_SIZE) ?  `MEM_SIZE/`PREFIX_SUM_SIZE
 					: ((`CHANNEL_NUM % `PREFIX_SUM_SIZE)!=0) ? `CHANNEL_NUM/`PREFIX_SUM_SIZE + 1
 					: `CHANNEL_NUM/`PREFIX_SUM_SIZE;
-localparam int PARAM_SIM_FILTER_REF_NUM = `MEM_SIZE/`CHANNEL_NUM;
-localparam int PARAM_SIM_IFM_SHIFT_NUM = 0;
+localparam int SIM_FILTER_REF_NUM = `MEM_SIZE/`CHANNEL_NUM;
+localparam int SIM_IFM_SHIFT_NUM = 0;
 
 localparam int PARAM_WR_DAT_CYC_NUM = `MEM_SIZE/`BUS_SIZE;
 localparam int PARAM_RD_SPARSEMAP_NUM = `MEM_SIZE/`PREFIX_SUM_SIZE;
 `else
-localparam int PARAM_SIM_WR_DAT_CYC_NUM = `MEM_SIZE/`BUS_SIZE;
-localparam int PARAM_SIM_RD_SPARSEMAP_NUM = `MEM_SIZE/`PREFIX_SUM_SIZE;
-localparam int PARAM_SIM_FILTER_REF_NUM = 0;
-localparam int PARAM_SIM_IFM_SHIFT_NUM = `OUTPUT_BUF_NUM;
+localparam int SIM_WR_DAT_CYC_NUM = `MEM_SIZE/`BUS_SIZE;
+localparam int SIM_RD_SPARSEMAP_NUM = `MEM_SIZE/`PREFIX_SUM_SIZE;
+localparam int SIM_FILTER_REF_NUM = 0;
+localparam int SIM_IFM_SHIFT_NUM = `MEM_SIZE/`CHANNEL_NUM;
 
 localparam int PARAM_WR_DAT_CYC_NUM = `MEM_SIZE/`BUS_SIZE;
 localparam int PARAM_RD_SPARSEMAP_NUM = `MEM_SIZE/`PREFIX_SUM_SIZE;
@@ -160,7 +160,7 @@ task ifm_input_gen();
 	ifm_sparsemap_i = mem_ifm_sparse_map_r[`BUS_SIZE*ifm_wr_count_i +: `BUS_SIZE];
 	ifm_nonzero_data_i = mem_ifm_non_zero_data_r[`BUS_SIZE*ifm_wr_count_i +: `BUS_SIZE];
 
-	repeat(PARAM_SIM_WR_DAT_CYC_NUM) @(posedge (clk_i && !rst_i)) begin
+	repeat(SIM_WR_DAT_CYC_NUM) @(posedge (clk_i && !rst_i)) begin
 		#1;
 		ifm_wr_count_i = ifm_wr_count_i+1;
 		ifm_sparsemap_i = mem_ifm_sparse_map_r[`BUS_SIZE*ifm_wr_count_i +: `BUS_SIZE];
@@ -215,7 +215,7 @@ task filter_input_gen();
 	filter_sparsemap_i = mem_filter_sparse_map_r[`BUS_SIZE*filter_wr_count_i +: `BUS_SIZE];
 	filter_nonzero_data_i = mem_filter_non_zero_data_r[`BUS_SIZE*filter_wr_count_i +: `BUS_SIZE];
 
-	repeat(PARAM_SIM_WR_DAT_CYC_NUM) @(posedge (clk_i && !rst_i)) begin
+	repeat(SIM_WR_DAT_CYC_NUM) @(posedge (clk_i && !rst_i)) begin
 		#1;
 		filter_wr_count_i = filter_wr_count_i+1;
 		filter_sparsemap_i = mem_filter_sparse_map_r[`BUS_SIZE*filter_wr_count_i +: `BUS_SIZE];
@@ -284,25 +284,31 @@ always @(posedge clk_i) begin
 		end
 		else begin
 			run_valid_i = 1'b1;
-			acc_buf_sel_i = acc_buf_sel_i + 1;
-			out_buf_sel_i = out_buf_sel_i + 1;
+			if (out_buf_sel_i == (SIM_FILTER_REF_NUM-1)) begin
+				acc_buf_sel_i = 0;
+				out_buf_sel_i = 0;
+			end
+			else begin
+				acc_buf_sel_i = acc_buf_sel_i + 1;
+				out_buf_sel_i = out_buf_sel_i + 1;
+			end
 			ifm_rd_sel_i = ~ifm_rd_sel_i;
 			ifm_wr_sel_i = ~ifm_wr_sel_i;
 			ifm_input_gen();
 		end
 	end
 end
-assign ifm_wr_last_w = ifm_wr_valid_i && (ifm_wr_count_i == (PARAM_SIM_WR_DAT_CYC_NUM-1));
+assign ifm_wr_last_w = ifm_wr_valid_i && (ifm_wr_count_i == (SIM_WR_DAT_CYC_NUM-1));
 
 integer filter_ref_num = 0;
 always @(posedge clk_i) begin
-	if (total_chunk_end_o && (out_buf_sel_i == (`OUTPUT_BUF_NUM-1))) begin
+	if (total_chunk_end_o && (out_buf_sel_i == (SIM_FILTER_REF_NUM-1))) begin
 		#1; 
 		if (filter_wr_valid_i) begin
 			run_valid_i = 1'b0;
 		end
 		else begin
-			if (filter_ref_num == PARAM_SIM_FILTER_REF_NUM) $finish;
+			if (filter_ref_num == SIM_FILTER_REF_NUM) $finish;
 			filter_ref_num = filter_ref_num + 1;
 
 			run_valid_i = 1'b1;
@@ -314,7 +320,7 @@ always @(posedge clk_i) begin
 end
 
 always @(posedge clk_i) begin
-	rd_sparsemap_last_i = PARAM_SIM_RD_SPARSEMAP_NUM - 1;
+	rd_sparsemap_last_i = SIM_RD_SPARSEMAP_NUM - 1;
 end
 
 `else
@@ -323,7 +329,7 @@ always @(posedge clk_i) begin
 	if (rst_i) begin
 		shift_left_i = {`PREFIX_SUM_SIZE{1'b0}};
 		rd_sparsemap_step_i = {PARAM_RD_SPARSEMAP_NUM{1'b0}};
-		rd_sparsemap_last_i = PARAM_SIM_RD_SPARSEMAP_NUM - 1;
+		rd_sparsemap_last_i = SIM_RD_SPARSEMAP_NUM - 1;
 	end
 	else if (total_chunk_end_o) begin
 		#1;
@@ -333,9 +339,9 @@ always @(posedge clk_i) begin
 
 		shift_left_i = (ifm_shift_num * `CHANNEL_NUM) % `PREFIX_SUM_SIZE;
 		rd_sparsemap_step_i = ifm_shift_num / `CHANNEL_NUM;
-		rd_sparsemap_last_i = PARAM_SIM_RD_SPARSEMAP_NUM - 1 + rd_sparsemap_step_i;
+		rd_sparsemap_last_i = SIM_RD_SPARSEMAP_NUM - 1 + rd_sparsemap_step_i;
 
-		if (ifm_shift_num == PARAM_SIM_IFM_SHIFT_NUM) $finish;
+		if (ifm_shift_num == SIM_IFM_SHIFT_NUM) $finish;
 	end
 end
 
