@@ -21,13 +21,8 @@
 
 
 module Compute_Unit_Top #(
-`ifdef CHUNK_PADDING
 	 localparam int PARAM_WR_DAT_CYC_NUM = `MEM_SIZE/`BUS_SIZE
 	,localparam int PARAM_RD_SPARSEMAP_NUM = `MEM_SIZE/`PREFIX_SUM_SIZE
-`else
-	 localparam int PARAM_WR_DAT_CYC_NUM = `MEM_SIZE/`BUS_SIZE
-	,localparam int PARAM_RD_SPARSEMAP_NUM = `MEM_SIZE/`PREFIX_SUM_SIZE
-`endif
 )(
 	 input rst_i
 	,input clk_i
@@ -56,11 +51,18 @@ module Compute_Unit_Top #(
 	,input run_valid_i
 	,input chunk_start_i
 	,input [$clog2(PARAM_RD_SPARSEMAP_NUM)-1:0] rd_sparsemap_last_i
-
-`ifndef CHUNK_PADDING
+`ifdef SHORT_CHANNEL
+ `ifndef CHUNK_PADDING
 	,output pri_enc_last_o
 	,input [$clog2(`PREFIX_SUM_SIZE)-1:0] shift_left_i
 	,input [$clog2(PARAM_RD_SPARSEMAP_NUM)-1:0] rd_sparsemap_step_i
+ `endif
+`else
+ `ifdef IFM_REUSE
+	,output pri_enc_last_o
+	,input [$clog2(`PREFIX_SUM_SIZE)-1:0] shift_left_i
+	,input [$clog2(PARAM_RD_SPARSEMAP_NUM)-1:0] rd_sparsemap_step_i
+ `endif
 `endif
 
 	,output chunk_end_o
@@ -103,11 +105,18 @@ module Compute_Unit_Top #(
 		,.run_valid_i
 		,.chunk_start_i
 		,.rd_sparsemap_last_i
-
-`ifndef CHUNK_PADDING
+`ifdef SHORT_CHANNEL
+ `ifndef CHUNK_PADDING
 		,.pri_enc_last_o
 		,.shift_left_i
 		,.rd_sparsemap_step_i
+ `endif
+`else
+ `ifdef IFM_REUSE
+		,.pri_enc_last_o
+		,.shift_left_i
+		,.rd_sparsemap_step_i
+ `endif
 `endif
 		
 		,.chunk_end_o

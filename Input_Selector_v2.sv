@@ -21,13 +21,8 @@
 
 
 module Input_Selector_v2 #(
-`ifdef CHUNK_PADDING
 	 localparam int PARAM_WR_DAT_CYC_NUM = `MEM_SIZE/`BUS_SIZE
 	,localparam int PARAM_RD_SPARSEMAP_NUM = `MEM_SIZE/`PREFIX_SUM_SIZE
-`else
-	 localparam int PARAM_WR_DAT_CYC_NUM = `MEM_SIZE/`BUS_SIZE
-	,localparam int PARAM_RD_SPARSEMAP_NUM = `MEM_SIZE/`PREFIX_SUM_SIZE
-`endif
 )(
 	 input rst_i
 	,input clk_i
@@ -55,11 +50,18 @@ module Input_Selector_v2 #(
 	,input run_valid_i
 	,input chunk_start_i
 	,input [$clog2(PARAM_RD_SPARSEMAP_NUM)-1:0] rd_sparsemap_last_i
-
-`ifndef CHUNK_PADDING
+`ifdef SHORT_CHANNEL
+ `ifndef CHUNK_PADDING
 	,output pri_enc_last_o
 	,input [$clog2(`PREFIX_SUM_SIZE)-1:0] shift_left_i
 	,input [$clog2(PARAM_RD_SPARSEMAP_NUM)-1:0] rd_sparsemap_step_i
+ `endif
+`else
+ `ifdef IFM_REUSE
+	,output pri_enc_last_o
+	,input [$clog2(`PREFIX_SUM_SIZE)-1:0] shift_left_i
+	,input [$clog2(PARAM_RD_SPARSEMAP_NUM)-1:0] rd_sparsemap_step_i
+ `endif
 `endif
 
 `ifndef COMB_DAT_CHUNK
@@ -92,11 +94,18 @@ module Input_Selector_v2 #(
 		
 		,.rd_sparsemap_i	
 		,.rd_addr_o
-
-`ifndef CHUNK_PADDING
-		,.shift_left_i
-		,.rd_sparsemap_step_i
-		,.rd_sparsemap_addr_i(rd_sparsemap_addr_w)
+`ifdef SHORT_CHANNEL
+ `ifndef CHUNK_PADDING
+ 		,.shift_left_i
+ 		,.rd_sparsemap_step_i
+ 		,.rd_sparsemap_addr_i(rd_sparsemap_addr_w)
+ `endif
+`else
+ `ifdef IFM_REUSE
+ 		,.shift_left_i
+ 		,.rd_sparsemap_step_i
+ 		,.rd_sparsemap_addr_i(rd_sparsemap_addr_w)
+ `endif
 `endif
 	);
 `else
@@ -159,33 +168,62 @@ module Input_Selector_v2 #(
 		,.match_addr_o(pri_enc_match_addr_w)
 		,.pri_enc_last_o(pri_enc_last_w)
 	);
-
-`ifdef CHUNK_PADDING
-	// Calculate sparsemap addr
-	always_ff @(posedge clk_i) begin
-		if (rst_i) begin
-			rd_sparsemap_addr_r <= {($clog2(PARAM_RD_SPARSEMAP_NUM)){1'b0}};
-		end
-		else if (pri_enc_last_w) begin
-			rd_sparsemap_addr_r <= rd_sparsemap_addr_w + 1'b1;
-		end
-		else if (chunk_start_i) begin
-			rd_sparsemap_addr_r <= {($clog2(PARAM_RD_SPARSEMAP_NUM)){1'b0}};
-		end
-	end
+`ifdef SHORT_CHANNEL
+ `ifdef CHUNK_PADDING
+ 	// Calculate sparsemap addr
+ 	always_ff @(posedge clk_i) begin
+ 		if (rst_i) begin
+ 			rd_sparsemap_addr_r <= {($clog2(PARAM_RD_SPARSEMAP_NUM)){1'b0}};
+ 		end
+ 		else if (pri_enc_last_w) begin
+ 			rd_sparsemap_addr_r <= rd_sparsemap_addr_w + 1'b1;
+ 		end
+ 		else if (chunk_start_i) begin
+ 			rd_sparsemap_addr_r <= {($clog2(PARAM_RD_SPARSEMAP_NUM)){1'b0}};
+ 		end
+ 	end
+ `else
+ 	// Calculate sparsemap addr
+ 	always_ff @(posedge clk_i) begin
+ 		if (rst_i) begin
+ 			rd_sparsemap_addr_r <= rd_sparsemap_step_i;
+ 		end
+ 		else if (pri_enc_last_w) begin
+ 			rd_sparsemap_addr_r <= rd_sparsemap_addr_w + 1'b1;
+ 		end
+ 		else if (chunk_start_i) begin
+ 			rd_sparsemap_addr_r <= rd_sparsemap_step_i;
+ 		end
+ 	end
+ `endif
 `else
-	// Calculate sparsemap addr
-	always_ff @(posedge clk_i) begin
-		if (rst_i) begin
-			rd_sparsemap_addr_r <= rd_sparsemap_step_i;
-		end
-		else if (pri_enc_last_w) begin
-			rd_sparsemap_addr_r <= rd_sparsemap_addr_w + 1'b1;
-		end
-		else if (chunk_start_i) begin
-			rd_sparsemap_addr_r <= rd_sparsemap_step_i;
-		end
-	end
+ `ifndef IFM_REUSE
+ 	// Calculate sparsemap addr
+ 	always_ff @(posedge clk_i) begin
+ 		if (rst_i) begin
+ 			rd_sparsemap_addr_r <= {($clog2(PARAM_RD_SPARSEMAP_NUM)){1'b0}};
+ 		end
+ 		else if (pri_enc_last_w) begin
+ 			rd_sparsemap_addr_r <= rd_sparsemap_addr_w + 1'b1;
+ 		end
+ 		else if (chunk_start_i) begin
+ 			rd_sparsemap_addr_r <= {($clog2(PARAM_RD_SPARSEMAP_NUM)){1'b0}};
+ 		end
+ 	end
+ `else
+ 	// Calculate sparsemap addr
+ 	always_ff @(posedge clk_i) begin
+ 		if (rst_i) begin
+ 			rd_sparsemap_addr_r <= rd_sparsemap_step_i;
+ 		end
+ 		else if (pri_enc_last_w) begin
+ 			rd_sparsemap_addr_r <= rd_sparsemap_addr_w + 1'b1;
+ 		end
+ 		else if (chunk_start_i) begin
+ 			rd_sparsemap_addr_r <= rd_sparsemap_step_i;
+ 		end
+ 	end
+ `endif
 `endif
 
 	always_ff @(posedge clk_i) begin
@@ -202,10 +240,18 @@ module Input_Selector_v2 #(
 
 	assign run_valid_w = chunk_start_i || run_valid_r;
 
-`ifdef CHUNK_PADDING
-	assign rd_sparsemap_addr_w = chunk_start_i ? {($clog2(PARAM_RD_SPARSEMAP_NUM)){1'b0}} : rd_sparsemap_addr_r;
+`ifdef SHORT_CHANNEL
+ `ifdef CHUNK_PADDING
+ 	assign rd_sparsemap_addr_w = chunk_start_i ? {($clog2(PARAM_RD_SPARSEMAP_NUM)){1'b0}} : rd_sparsemap_addr_r;
+ `else
+ 	assign rd_sparsemap_addr_w = chunk_start_i ? rd_sparsemap_step_i : rd_sparsemap_addr_r;
+ `endif
 `else
-	assign rd_sparsemap_addr_w = chunk_start_i ? rd_sparsemap_step_i : rd_sparsemap_addr_r;
+ `ifndef IFM_REUSE
+ 	assign rd_sparsemap_addr_w = chunk_start_i ? {($clog2(PARAM_RD_SPARSEMAP_NUM)){1'b0}} : rd_sparsemap_addr_r;
+ `else
+ 	assign rd_sparsemap_addr_w = chunk_start_i ? rd_sparsemap_step_i : rd_sparsemap_addr_r;
+ `endif
 `endif
 
 	assign chunk_end_o = 	((rd_sparsemap_addr_w == rd_sparsemap_last_i) && pri_enc_last_w) 
@@ -215,8 +261,14 @@ module Input_Selector_v2 #(
 	assign rd_sparsemap_addr_o = rd_sparsemap_addr_w;
 `endif
 
-`ifndef CHUNK_PADDING
-	assign pri_enc_last_o = pri_enc_last_w;
+`ifdef SHORT_CHANNEL
+ `ifndef CHUNK_PADDING
+ 	assign pri_enc_last_o = pri_enc_last_w;
+ `endif
+`else
+ `ifdef IFM_REUSE
+ 	assign pri_enc_last_o = pri_enc_last_w;
+ `endif
 `endif
 
 endmodule

@@ -6,6 +6,9 @@
 
 `ifndef COMB_DAT_CHUNK
 	`define CHUNK_PADDING
+	`ifdef IFM_REUSE
+		`undef IFM_REUSE
+	`endif
 `endif
 
 `define MEM_SIZE		128	//Bytes
@@ -20,5 +23,6 @@
 `define IFM_DENSE_RATE 		70
 `define FILTER_DENSE_RATE 	70
 
-`define SHORT_CHANNEL
+//`define SHORT_CHANNEL
+`define IFM_REUSE
 `define CHANNEL_NUM 		8

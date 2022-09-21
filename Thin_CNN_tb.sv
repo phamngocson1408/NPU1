@@ -41,6 +41,19 @@ end
  	localparam int SIM_IFM_SHIFT_NUM = SIM_CHUNK_DAT_SIZE / `CHANNEL_NUM;
 	localparam int SIM_OUTPUT_NUM = (SIM_IFM_SHIFT_NUM <= `OUTPUT_BUF_NUM) ? SIM_IFM_SHIFT_NUM : `OUTPUT_BUF_NUM;
  `endif
+`else	// not define SHORT_CHANNEL
+ `ifndef IFM_REUSE
+	localparam int SIM_CHUNK_DAT_SIZE = `MEM_SIZE;
+ 	localparam int SIM_FILTER_REF_NUM = `MEM_SIZE / `PREFIX_SUM_SIZE;
+ 	localparam int SIM_IFM_SHIFT_NUM = 1;
+	localparam int SIM_OUTPUT_NUM = (SIM_FILTER_REF_NUM <= `OUTPUT_BUF_NUM) ? SIM_FILTER_REF_NUM : `OUTPUT_BUF_NUM;
+ 	
+ `else
+	localparam int SIM_CHUNK_DAT_SIZE = `MEM_SIZE;
+ 	localparam int SIM_FILTER_REF_NUM = `MEM_SIZE / `PREFIX_SUM_SIZE;
+ 	localparam int SIM_IFM_SHIFT_NUM = SIM_CHUNK_DAT_SIZE / `CHANNEL_NUM;
+	localparam int SIM_OUTPUT_NUM = (SIM_IFM_SHIFT_NUM <= `OUTPUT_BUF_NUM) ? SIM_IFM_SHIFT_NUM : `OUTPUT_BUF_NUM;
+ `endif
 `endif
 
 localparam int SIM_WR_DAT_CYC_NUM = ((SIM_CHUNK_DAT_SIZE % `BUS_SIZE)!=0) ? SIM_CHUNK_DAT_SIZE / `BUS_SIZE + 1
@@ -115,6 +128,11 @@ Compute_Cluster u_Compute_Cluster (
 	,.shift_left_i
 	,.rd_sparsemap_step_i
  `endif
+`else
+ `ifdef IFM_REUSE
+	,.shift_left_i
+	,.rd_sparsemap_step_i
+ `endif
 `endif
 	,.total_chunk_end_o
 
@@ -149,6 +167,9 @@ task automatic ifm_mem_gen();
  		data = $urandom_range(256,1);
  		valid_dat = $urandom_range(100,0);
  `endif
+`else	// not define SHORT_CHANNEL
+ 		data = $urandom_range(256,1);
+ 		valid_dat = $urandom_range(100,0);
 `endif
 		if (valid_dat <= `IFM_DENSE_RATE) begin
 			mem_ifm_non_zero_data_r[j] = data;
@@ -203,6 +224,9 @@ task automatic filter_mem_gen();
  		data = $urandom_range(256,1);
  		valid_dat = $urandom_range(100,0);
  `endif
+`else	// not define SHORT_CHANNEL
+ 		data = $urandom_range(256,1);
+ 		valid_dat = $urandom_range(100,0);
 `endif
 		if (valid_dat <= `FILTER_DENSE_RATE) begin
 			mem_filter_non_zero_data_r[j] = data;
@@ -278,6 +302,22 @@ initial begin
  	ifm_wr_sel_i = 1'b1;
  	ifm_input_gen();
  `endif
+`else	// not define SHORT_CHANNEL
+// `ifndef IFM_REUSE
+ 	fork
+ 		begin
+ 			filter_wr_sel_i = 1'b1;
+ 			wr_total_filter();
+ 		end
+ 		begin
+ 			ifm_wr_sel_i = 1'b1;
+ 			ifm_input_gen();
+ 		end
+ 	join
+// `else
+// 	ifm_wr_sel_i = 1'b1;
+// 	ifm_input_gen();
+// `endif
 `endif
 end
 
@@ -339,6 +379,95 @@ end
 			ifm_shift_num = ifm_shift_num + 1;
 
 			if (out_buf_sel_i == (SIM_OUTPUT_NUM-1)) begin
+				acc_buf_sel_i = 0;
+				out_buf_sel_i = 0;
+				fork
+					begin
+						ifm_rd_sel_i = ~ifm_rd_sel_i;
+						ifm_wr_sel_i = ~ifm_wr_sel_i;
+						ifm_input_gen();
+					end
+					begin
+						filter_rd_sel_i = ~filter_rd_sel_i;
+						filter_wr_sel_i = ~filter_wr_sel_i;
+						wr_total_filter();
+					end
+				join
+			end
+			else begin
+				acc_buf_sel_i = acc_buf_sel_i + 1;
+				out_buf_sel_i = out_buf_sel_i + 1;
+			end
+		end
+	end
+
+	assign shift_left_i = (ifm_shift_num * `CHANNEL_NUM) % `PREFIX_SUM_SIZE;
+	assign rd_sparsemap_step_i = (ifm_shift_num * `CHANNEL_NUM) / `PREFIX_SUM_SIZE;
+	assign rd_sparsemap_last_i = SIM_RD_SPARSEMAP_NUM - 1 + rd_sparsemap_step_i;
+ `endif
+`else	// not define SHORT_CHANNEL
+ `ifndef IFM_REUSE
+	always @(posedge clk_i) begin
+		if (total_chunk_end_o) begin
+			if (ifm_wr_valid_i && (!ifm_wr_last_w)) begin
+				run_valid_i = 1'b0;
+			end
+			else begin
+				run_valid_i = 1'b1;
+				if (out_buf_sel_i == (SIM_OUTPUT_NUM-1)) begin
+					acc_buf_sel_i = 0;
+					out_buf_sel_i = 0;
+				end
+				else begin
+					acc_buf_sel_i = acc_buf_sel_i + 1;
+					out_buf_sel_i = out_buf_sel_i + 1;
+				end
+				ifm_rd_sel_i = ~ifm_rd_sel_i;
+				ifm_wr_sel_i = ~ifm_wr_sel_i;
+				ifm_input_gen();
+			end
+		end
+	end
+	assign ifm_wr_last_w = ifm_wr_valid_i && (ifm_wr_count_i == (SIM_WR_DAT_CYC_NUM-1));
+	
+	always @(posedge clk_i) begin
+		if (rst_i) begin
+			filter_ref_num = 0;
+		end
+		else if (total_chunk_end_o && (out_buf_sel_i == (SIM_OUTPUT_NUM-1))) begin
+			if (filter_wr_valid_i) begin
+				run_valid_i = 1'b0;
+			end
+			else begin
+				if (filter_ref_num == (SIM_FILTER_REF_NUM-1)) $finish;
+				filter_ref_num = filter_ref_num + 1;
+	
+				run_valid_i = 1'b1;
+				filter_rd_sel_i = ~filter_rd_sel_i;
+				filter_wr_sel_i = ~filter_wr_sel_i;
+				wr_total_filter();
+			end
+		end
+	end
+	
+	assign rd_sparsemap_last_i = SIM_RD_SPARSEMAP_NUM - 1;
+
+ `else
+	always @(posedge clk_i) begin
+		if (rst_i) begin
+			ifm_shift_num = 0;
+			filter_ref_num = 0;
+		end
+		else if (total_chunk_end_o) begin
+			if (ifm_shift_num == (SIM_IFM_SHIFT_NUM-1))
+				ifm_shift_num = 0;
+			else
+				ifm_shift_num = ifm_shift_num + 1;
+
+			if (out_buf_sel_i == (SIM_OUTPUT_NUM-1)) begin
+				if (filter_ref_num == (SIM_FILTER_REF_NUM-1)) $finish;
+				filter_ref_num = filter_ref_num + 1;
+
 				acc_buf_sel_i = 0;
 				out_buf_sel_i = 0;
 				fork
