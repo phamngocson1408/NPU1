@@ -37,16 +37,16 @@ module MAC (
 	logic valid_r;
 	always_ff @(posedge clk_i) begin
 		if (rst_i) begin
-			mul_r <= #1 {(`DAT_SIZE*2){1'b0}};	
-			valid_r <= #1 1'b0;
+			mul_r <= {(`DAT_SIZE*2){1'b0}};	
+			valid_r <= 1'b0;
 		end
 		else if (valid_i) begin
-			mul_r <= #1 in1_i * in2_i;
-			valid_r <= #1 1'b1;
+			mul_r <= in1_i * in2_i;
+			valid_r <= 1'b1;
 		end
 		else begin
-			mul_r <= #1 {(`DAT_SIZE*2){1'b0}};	
-			valid_r <= #1 1'b0;
+			mul_r <= {(`DAT_SIZE*2){1'b0}};	
+			valid_r <= 1'b0;
 		end
 	end
 

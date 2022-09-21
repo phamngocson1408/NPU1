@@ -137,13 +137,13 @@ module IFM_Dat_Chunk_Comb_Non_Padding_v2 #(
 	always_ff @(posedge clk_i) begin
 		for (integer i=0; i<`COMPUTE_UNIT_NUM; i=i+1) begin
 			if (rst_i) begin
-				rd_sel_r[i] <= #1 1'b0;
+				rd_sel_r[i] <= 1'b0;
 			end
 			else begin
 				if ((rd_sparsemap_addr_i[i] == (PARAM_RD_SPARSEMAP_NUM-1)) && pri_enc_last_i[i])
-					rd_sel_r[i] <= #1 ~rd_sel_i;
+					rd_sel_r[i] <= ~rd_sel_i;
 				else
-					rd_sel_r[i] <= #1 rd_sel_w[i];
+					rd_sel_r[i] <= rd_sel_w[i];
 			end
 		end
 	end	

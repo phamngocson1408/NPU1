@@ -52,13 +52,13 @@ module Data_Addr_Cal #(
 
 	always_ff @(posedge clk_i) begin
 		if (rst_i) begin
-			rd_data_base_addr_r <= #1 {($clog2(`MEM_SIZE) + 1){1'b0}};
+			rd_data_base_addr_r <= {($clog2(`MEM_SIZE) + 1){1'b0}};
 		end
 		else if (pri_enc_end_i) begin
-			rd_data_base_addr_r <= #1 rd_data_base_addr_w + prefix_sum_out_w[`PREFIX_SUM_SIZE-1];
+			rd_data_base_addr_r <= rd_data_base_addr_w + prefix_sum_out_w[`PREFIX_SUM_SIZE-1];
 		end
 		else if (chunk_start_i) begin
-			rd_data_base_addr_r <= #1 {($clog2(`MEM_SIZE) + 1){1'b0}};
+			rd_data_base_addr_r <= {($clog2(`MEM_SIZE) + 1){1'b0}};
 		end
 	end
 

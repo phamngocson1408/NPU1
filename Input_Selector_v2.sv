@@ -164,39 +164,39 @@ module Input_Selector_v2 #(
 	// Calculate sparsemap addr
 	always_ff @(posedge clk_i) begin
 		if (rst_i) begin
-			rd_sparsemap_addr_r <= #1 {($clog2(PARAM_RD_SPARSEMAP_NUM)){1'b0}};
+			rd_sparsemap_addr_r <= {($clog2(PARAM_RD_SPARSEMAP_NUM)){1'b0}};
 		end
 		else if (pri_enc_last_w) begin
-			rd_sparsemap_addr_r <= #1 rd_sparsemap_addr_w + 1'b1;
+			rd_sparsemap_addr_r <= rd_sparsemap_addr_w + 1'b1;
 		end
 		else if (chunk_start_i) begin
-			rd_sparsemap_addr_r <= #1 {($clog2(PARAM_RD_SPARSEMAP_NUM)){1'b0}};
+			rd_sparsemap_addr_r <= {($clog2(PARAM_RD_SPARSEMAP_NUM)){1'b0}};
 		end
 	end
 `else
 	// Calculate sparsemap addr
 	always_ff @(posedge clk_i) begin
 		if (rst_i) begin
-			rd_sparsemap_addr_r <= #1 rd_sparsemap_step_i;
+			rd_sparsemap_addr_r <= rd_sparsemap_step_i;
 		end
 		else if (pri_enc_last_w) begin
-			rd_sparsemap_addr_r <= #1 rd_sparsemap_addr_w + 1'b1;
+			rd_sparsemap_addr_r <= rd_sparsemap_addr_w + 1'b1;
 		end
 		else if (chunk_start_i) begin
-			rd_sparsemap_addr_r <= #1 rd_sparsemap_step_i;
+			rd_sparsemap_addr_r <= rd_sparsemap_step_i;
 		end
 	end
 `endif
 
 	always_ff @(posedge clk_i) begin
 		if (rst_i) begin
-			run_valid_r <= #1 1'b1;
+			run_valid_r <= 1'b1;
 		end
 		else if (chunk_end_o) begin
-			run_valid_r <= #1 1'b0;
+			run_valid_r <= 1'b0;
 		end
 		else if (chunk_start_i) begin
-			run_valid_r <= #1 1'b1;
+			run_valid_r <= 1'b1;
 		end
 	end
 

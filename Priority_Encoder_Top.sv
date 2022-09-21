@@ -55,26 +55,26 @@ module Priority_Encoder_Top (
 	
 	always_ff @(posedge clk_i) begin
 		if (rst_i) begin
-			pri_enc_i_r <= #1 {`PREFIX_SUM_SIZE{1'b0}};
+			pri_enc_i_r <= {`PREFIX_SUM_SIZE{1'b0}};
 		end
 		else if (valid_i) begin
 			if (chunk_start_i || pri_enc_start_r) begin
-				pri_enc_i_r <= #1 and_gate_out;
+				pri_enc_i_r <= and_gate_out;
 			end
 
-			pri_enc_i_r[pri_enc_o_w] <= #1 1'b0;
+			pri_enc_i_r[pri_enc_o_w] <= 1'b0;
 		end
 	end
 
 	always_ff @(posedge clk_i) begin
 		if (rst_i) begin
-			pri_enc_start_r <= #1 1'b0;
+			pri_enc_start_r <= 1'b0;
 		end
 		else if (valid_i) begin
 			if (pri_enc_last_o)
-				pri_enc_start_r <= #1 1'b1;
+				pri_enc_start_r <= 1'b1;
 			else if (pri_enc_start_r)
-				pri_enc_start_r <= #1 1'b0;
+				pri_enc_start_r <= 1'b0;
 		end
 	end
 

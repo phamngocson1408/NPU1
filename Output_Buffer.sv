@@ -38,11 +38,11 @@ module Output_Buffer (
 	always_ff @(posedge clk_i) begin
 		if (rst_i) begin
 			for(i=0; i<`OUTPUT_BUF_NUM; i=i+1) begin
-				partial_output_mem[i] <= #1 {`PARTIAL_OUT_SIZE{1'b0}};
+				partial_output_mem[i] <= {`PARTIAL_OUT_SIZE{1'b0}};
 			end
 		end
 		else if (acc_val_i) begin
-			partial_output_mem[acc_sel_i] <= #1 acc_dat_i;
+			partial_output_mem[acc_sel_i] <= acc_dat_i;
 		end
 	end
 
