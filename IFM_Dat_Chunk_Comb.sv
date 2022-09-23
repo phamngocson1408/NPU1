@@ -45,9 +45,6 @@ module IFM_Dat_Chunk_Comb #(
 	logic [1:0][`MEM_SIZE:1][7:0] rd_nonzero_data_w;
 	logic [1:0][`MEM_SIZE-1:0] rd_sparsemap_w;
 
-	logic [1:0][`COMPUTE_UNIT_NUM-1:0][`PREFIX_SUM_SIZE-1:0] rd_sparsemap_o_w;
-	logic [1:0][`COMPUTE_UNIT_NUM-1:0][7:0] rd_data_w;
-
 	for (genvar n=0; n<2; n=n+1) begin
 		Dat_Chunk_Comb u_Dat_Chunk_Comb (
 			 .clk_i
@@ -66,43 +63,19 @@ module IFM_Dat_Chunk_Comb #(
 	assign wr_val_w[0] = (!wr_sel_i) && wr_valid_i;
 
 	// Read Sparsemap
-	always_comb begin
-		for (integer i=0; i<2; i=i+1) begin
-			for (integer j=0; j< `COMPUTE_UNIT_NUM; j=j+1) begin
-				rd_sparsemap_o_w[i][j] = {`PREFIX_SUM_SIZE{1'b0}};
-				for (integer k=0; k<PARAM_RD_SPARSEMAP_NUM; k = k+1) begin
-					if (rd_sparsemap_addr_i[j] == k)
-						rd_sparsemap_o_w[i][j] = rd_sparsemap_w[i][`PREFIX_SUM_SIZE*k +: `PREFIX_SUM_SIZE];
-				end
-			end
-		end
-	end
-
-	always_comb begin
-		for (integer i=0; i<`COMPUTE_UNIT_NUM; i=i+1) begin
-			if (rd_sel_i)
-				rd_sparsemap_o[i] = rd_sparsemap_o_w[1][i];
-			else
-				rd_sparsemap_o[i] = rd_sparsemap_o_w[0][i];
-		end
-	end
+	Dat_Chunk_Comb_Sparsemap u_Dat_Chunk_Comb_Sparsemap (
+		 .rd_sel_i
+		,.rd_sparsemap_i(rd_sparsemap_w)
+		,.rd_sparsemap_addr_i
+		,.rd_sparsemap_o	
+	);
 
 	// Read Nonzero data
-	always_comb begin
-		for (integer i=0; i<2; i=i+1) begin
-			for (integer j=0; j<`COMPUTE_UNIT_NUM; j=j+1) begin
-				rd_data_w[i][j] = rd_nonzero_data_w[i][rd_addr_i[i]];
-			end
-		end
-	end
-
-	always_comb begin
-		for (integer i=0; i<`COMPUTE_UNIT_NUM; i=i+1) begin
-			if (rd_sel_i)
-				rd_data_o[i] = rd_data_w[1][i];
-			else
-				rd_data_o[i] = rd_data_w[0][i];
-		end
-	end
+	Dat_Chunk_Comb_Dat u_Dat_Chunk_Comb_Dat (
+		 .rd_sel_i
+		,.rd_nonzero_data_i(rd_nonzero_data_w)
+		,.rd_addr_i
+		,.rd_data_o
+	);
 
 endmodule
