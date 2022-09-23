@@ -24,5 +24,5 @@
 `define FILTER_DENSE_RATE 	70
 
 //`define SHORT_CHANNEL
-//`define IFM_REUSE
+`define IFM_REUSE
 `define CHANNEL_NUM 		8

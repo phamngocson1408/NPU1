@@ -19,3 +19,4 @@
 20220921 - Simulate short channel
 20220921-17:26 - Add IFM_REUSE
 20220923 - Breakdown Dat_Chunk_Comb to analyze power
+20220923-17:46 - Add buffer RAMs
