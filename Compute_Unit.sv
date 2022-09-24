@@ -52,18 +52,10 @@ module Compute_Unit #(
 	,input chunk_start_i
 	,input [$clog2(PARAM_RD_SPARSEMAP_NUM)-1:0] rd_sparsemap_last_i
 
-`ifdef SHORT_CHANNEL
- `ifndef CHUNK_PADDING
-	,output pri_enc_last_o
-	,input [$clog2(`PREFIX_SUM_SIZE)-1:0] shift_left_i
-	,input [$clog2(PARAM_RD_SPARSEMAP_NUM)-1:0] rd_sparsemap_step_i
- `endif
-`else
- `ifdef IFM_REUSE
-	,output pri_enc_last_o
-	,input [$clog2(`PREFIX_SUM_SIZE)-1:0] shift_left_i
-	,input [$clog2(PARAM_RD_SPARSEMAP_NUM)-1:0] rd_sparsemap_step_i
- `endif
+`ifdef CHANNEL_STACKING
+       ,output pri_enc_last_o
+       ,input [$clog2(`PREFIX_SUM_SIZE)-1:0] shift_left_i
+       ,input [$clog2(PARAM_RD_SPARSEMAP_NUM)-1:0] rd_sparsemap_step_i
 `endif
 
 	,output chunk_end_o
@@ -106,18 +98,11 @@ module Compute_Unit #(
 		,.run_valid_i
 		,.chunk_start_i
 		,.rd_sparsemap_last_i
-`ifdef SHORT_CHANNEL
- `ifndef CHUNK_PADDING
- 		,.pri_enc_last_o
- 		,.shift_left_i
- 		,.rd_sparsemap_step_i
- `endif
-`else
- `ifdef IFM_REUSE
- 		,.pri_enc_last_o
- 		,.shift_left_i
- 		,.rd_sparsemap_step_i
- `endif
+
+`ifdef CHANNEL_STACKING
+		,.pri_enc_last_o
+		,.shift_left_i
+		,.rd_sparsemap_step_i
 `endif
 		
 `ifndef COMB_DAT_CHUNK

@@ -29,7 +29,7 @@ end
 
 //Instance
 `ifdef SHORT_CHANNEL
- `ifdef CHUNK_PADDING
+ `ifdef CHANNEL_PADDING
 	localparam int SIM_CHUNK_DAT_SIZE = `CHANNEL_NUM;
  	localparam int SIM_FILTER_REF_NUM = `MEM_SIZE / SIM_CHUNK_DAT_SIZE;
  	localparam int SIM_IFM_SHIFT_NUM = 1;
@@ -42,7 +42,7 @@ end
 	localparam int SIM_OUTPUT_NUM = (SIM_IFM_SHIFT_NUM <= `OUTPUT_BUF_NUM) ? SIM_IFM_SHIFT_NUM : `OUTPUT_BUF_NUM;
  `endif
 `else	// not define SHORT_CHANNEL
- `ifndef IFM_REUSE
+ `ifndef CHANNEL_STACKING
 	localparam int SIM_CHUNK_DAT_SIZE = `MEM_SIZE;
  	localparam int SIM_FILTER_REF_NUM = `MEM_SIZE / `PREFIX_SUM_SIZE;
  	localparam int SIM_IFM_SHIFT_NUM = 1;
@@ -83,7 +83,7 @@ logic run_valid_i;
 logic total_chunk_start_i;
 logic [$clog2(PARAM_RD_SPARSEMAP_NUM)-1:0] rd_sparsemap_last_i;
 
-//`ifndef CHUNK_PADDING
+//`ifndef CHANNEL_PADDING
 logic [$clog2(`PREFIX_SUM_SIZE)-1:0] shift_left_i;
 logic [$clog2(PARAM_RD_SPARSEMAP_NUM)-1:0] rd_sparsemap_step_i;
 //`endif
@@ -124,12 +124,12 @@ Compute_Cluster u_Compute_Cluster (
 	,.rd_sparsemap_last_i
 
 `ifdef SHORT_CHANNEL
- `ifndef CHUNK_PADDING
+ `ifndef CHANNEL_PADDING
 	,.shift_left_i
 	,.rd_sparsemap_step_i
  `endif
 `else
- `ifdef IFM_REUSE
+ `ifdef CHANNEL_STACKING
 	,.shift_left_i
 	,.rd_sparsemap_step_i
  `endif
@@ -154,7 +154,7 @@ task automatic ifm_mem_gen();
 
 	for (i=0; i<`MEM_SIZE; i=i+1) begin
 `ifdef SHORT_CHANNEL
- `ifdef CHUNK_PADDING
+ `ifdef CHANNEL_PADDING
  		if (i < `CHANNEL_NUM) begin
  			data = $urandom_range(256,1);
  			valid_dat = $urandom_range(100,0);
@@ -211,7 +211,7 @@ task automatic filter_mem_gen();
 
 	for (i=0; i<`MEM_SIZE; i=i+1) begin
 `ifdef SHORT_CHANNEL
- `ifdef CHUNK_PADDING
+ `ifdef CHANNEL_PADDING
  		if (i < `CHANNEL_NUM) begin
  			data = $urandom_range(256,1);
  			valid_dat = $urandom_range(100,0);
@@ -287,7 +287,7 @@ initial begin
 	filter_rd_sel_i = 1'b0;
 	run_valid_i = 1'b1;
 `ifdef SHORT_CHANNEL
- `ifdef CHUNK_PADDING
+ `ifdef CHANNEL_PADDING
  	fork
  		begin
  			filter_wr_sel_i = 1'b1;
@@ -303,7 +303,7 @@ initial begin
  	ifm_input_gen();
  `endif
 `else	// not define SHORT_CHANNEL
-// `ifndef IFM_REUSE
+// `ifndef CHANNEL_STACKING
  	fork
  		begin
  			filter_wr_sel_i = 1'b1;
@@ -323,7 +323,7 @@ end
 
 // Re-generate IFM and Filter after chunk end
 `ifdef SHORT_CHANNEL
- `ifdef CHUNK_PADDING
+ `ifdef CHANNEL_PADDING
 	always @(posedge clk_i) begin
 		if (total_chunk_end_o) begin
 			if (ifm_wr_valid_i && (!ifm_wr_last_w)) begin
@@ -406,7 +406,7 @@ end
 	assign rd_sparsemap_last_i = SIM_RD_SPARSEMAP_NUM - 1 + rd_sparsemap_step_i;
  `endif
 `else	// not define SHORT_CHANNEL
- `ifndef IFM_REUSE
+ `ifndef CHANNEL_STACKING
 	always @(posedge clk_i) begin
 		if (total_chunk_end_o) begin
 			if (ifm_wr_valid_i && (!ifm_wr_last_w)) begin
