@@ -2,10 +2,8 @@
 `define CYCLE 20
 
 //`define SHORT_CHANNEL
-//`define FULL_CHANNEL
 
 `define CHANNEL_STACKING
-//`define CHANNEL_PADDING
 
 `define COMB_DAT_CHUNK
 
@@ -37,8 +35,6 @@
 `endif
 
 `ifdef CHANNEL_STACKING
-	`ifndef COMB_DAT_CHUNK
-		`define COMB_DAT_CHUNK
-	`endif
+	`define COMB_DAT_CHUNK
 `endif
 

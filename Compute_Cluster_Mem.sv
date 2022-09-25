@@ -20,7 +20,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module Compute_Cluster_Mem#(
+module Compute_Cluster_Mem #(
 	 localparam int SRAM_CHUNK_SIZE = `MEM_SIZE
  	,localparam int SRAM_FILTER_NUM = SRAM_CHUNK_SIZE / `CHANNEL_NUM
 	,localparam int SRAM_OUTPUT_NUM = (SRAM_FILTER_NUM <= `OUTPUT_BUF_NUM) ? SRAM_FILTER_NUM : `OUTPUT_BUF_NUM
@@ -142,7 +142,7 @@ Mem_Filter u_Mem_Filter (
 	,.rd_sparsemap_o(filter_rd_sparsemap_o_w)
 	,.rd_nonzero_data_o(filter_rd_nonzero_data_o_w)
 	,.rd_dat_count_i(filter_wr_count_i)
-	,.rd_chunk_count_i(filter_wr_order_sel_i[$clog2(SRAM_FILTER_NUM)-1:0])
+	,.rd_chunk_count_i(filter_wr_order_sel_i)
 );
 
 endmodule
