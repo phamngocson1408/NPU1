@@ -40,7 +40,7 @@ module Compute_Cluster #(
 	,input [$clog2(PARAM_WR_DAT_CYC_NUM)-1:0] filter_wr_count_i
 	,input filter_wr_sel_i
 	,input filter_rd_sel_i
-	,input [$clog2(`OUTPUT_BUF_NUM)-1:0] filter_wr_order_sel_i
+	,input [$clog2(`COMPUTE_UNIT_NUM)-1:0] filter_wr_order_sel_i
 
 	,input run_valid_i
 	,input total_chunk_start_i

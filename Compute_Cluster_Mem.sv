@@ -22,9 +22,10 @@
 
 module Compute_Cluster_Mem #(
 	 localparam int SRAM_CHUNK_SIZE = `MEM_SIZE
- 	,localparam int SRAM_FILTER_NUM = SRAM_CHUNK_SIZE / `CHANNEL_NUM
-	,localparam int SRAM_OUTPUT_NUM = (SRAM_FILTER_NUM <= `OUTPUT_BUF_NUM) ? SRAM_FILTER_NUM : `OUTPUT_BUF_NUM
- 	,localparam int SRAM_IFM_NUM = SRAM_FILTER_NUM + SRAM_OUTPUT_NUM
+ 	,localparam int SRAM_IFM_SHIFT_NUM = SRAM_CHUNK_SIZE / `CHANNEL_NUM
+	,localparam int SRAM_OUTPUT_NUM = (SRAM_IFM_SHIFT_NUM <= `OUTPUT_BUF_NUM) ? SRAM_IFM_SHIFT_NUM : `OUTPUT_BUF_NUM
+ 	,localparam int SRAM_IFM_NUM = SRAM_IFM_SHIFT_NUM + SRAM_OUTPUT_NUM
+ 	,localparam int SRAM_FILTER_NUM = SRAM_IFM_SHIFT_NUM * `COMPUTE_UNIT_NUM
 	,localparam int PARAM_WR_DAT_CYC_NUM = `MEM_SIZE/`BUS_SIZE
 	,localparam int PARAM_RD_SPARSEMAP_NUM = `MEM_SIZE/`PREFIX_SUM_SIZE
 )(
@@ -41,7 +42,7 @@ module Compute_Cluster_Mem #(
 	,input [$clog2(PARAM_WR_DAT_CYC_NUM)-1:0] filter_wr_count_i
 	,input filter_wr_sel_i
 	,input filter_rd_sel_i
-	,input [$clog2(`OUTPUT_BUF_NUM)-1:0] filter_wr_order_sel_i
+	,input [$clog2(SRAM_FILTER_NUM)-1:0] filter_wr_chunk_count_i
 
 	,input run_valid_i
 	,input total_chunk_start_i
@@ -95,7 +96,7 @@ Compute_Cluster u_Compute_Cluster (
 	,.filter_wr_count_i
 	,.filter_wr_sel_i
 	,.filter_rd_sel_i
-	,.filter_wr_order_sel_i
+	,.filter_wr_order_sel_i(filter_wr_chunk_count_i[$clog2(`COMPUTE_UNIT_NUM)-1:0])
 
 	,.run_valid_i
 	,.total_chunk_start_i
@@ -142,7 +143,7 @@ Mem_Filter u_Mem_Filter (
 	,.rd_sparsemap_o(filter_rd_sparsemap_o_w)
 	,.rd_nonzero_data_o(filter_rd_nonzero_data_o_w)
 	,.rd_dat_count_i(filter_wr_count_i)
-	,.rd_chunk_count_i(filter_wr_order_sel_i)
+	,.rd_chunk_count_i(filter_wr_chunk_count_i)
 );
 
 endmodule

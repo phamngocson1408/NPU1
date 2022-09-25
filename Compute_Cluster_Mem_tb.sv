@@ -63,9 +63,10 @@ localparam int PARAM_WR_DAT_CYC_NUM = `MEM_SIZE/`BUS_SIZE;
 localparam int PARAM_RD_SPARSEMAP_NUM = `MEM_SIZE/`PREFIX_SUM_SIZE;
 
 localparam int SRAM_CHUNK_SIZE = `MEM_SIZE;
-localparam int SRAM_FILTER_NUM = SRAM_CHUNK_SIZE / `CHANNEL_NUM;
-localparam int SRAM_OUTPUT_NUM = (SRAM_FILTER_NUM <= `OUTPUT_BUF_NUM) ? SRAM_FILTER_NUM : `OUTPUT_BUF_NUM;
-localparam int SRAM_IFM_NUM = SRAM_FILTER_NUM + SRAM_OUTPUT_NUM;
+localparam int SRAM_IFM_SHIFT_NUM = SRAM_CHUNK_SIZE / `CHANNEL_NUM;
+localparam int SRAM_OUTPUT_NUM = (SRAM_IFM_SHIFT_NUM <= `OUTPUT_BUF_NUM) ? SRAM_IFM_SHIFT_NUM : `OUTPUT_BUF_NUM;
+localparam int SRAM_IFM_NUM = SRAM_IFM_SHIFT_NUM + SRAM_OUTPUT_NUM;
+localparam int SRAM_FILTER_NUM = SRAM_IFM_SHIFT_NUM * `COMPUTE_UNIT_NUM;
 
 //DUT instance
 logic ifm_wr_valid_i;
@@ -78,7 +79,7 @@ logic filter_wr_valid_i;
 logic [$clog2(PARAM_WR_DAT_CYC_NUM)-1:0] filter_wr_count_i ;
 logic filter_wr_sel_i;
 logic filter_rd_sel_i;
-logic [$clog2(`OUTPUT_BUF_NUM)-1:0] filter_wr_order_sel_i;
+logic [$clog2(SRAM_FILTER_NUM)-1:0] filter_wr_chunk_count_i;
 
 logic run_valid_i;
 logic total_chunk_start_i;
@@ -125,7 +126,7 @@ Compute_Cluster_Mem u_Compute_Cluster_Mem (
 	,.filter_wr_count_i
 	,.filter_wr_sel_i
 	,.filter_rd_sel_i
-	,.filter_wr_order_sel_i
+	,.filter_wr_chunk_count_i
 
 	,.run_valid_i
 	,.total_chunk_start_i
@@ -296,13 +297,12 @@ task rd_filter_buf();
 	end
 	filter_wr_valid_i = 1'b0;
 	filter_wr_count_i = 0;
+	filter_wr_chunk_count_i = filter_wr_chunk_count_i + 1;
 endtask
 
 task rd_total_filter_buf();
-	filter_wr_order_sel_i = 0;
 	repeat(`COMPUTE_UNIT_NUM) begin
 		rd_filter_buf();
-		filter_wr_order_sel_i = filter_wr_order_sel_i + 1;
 	end
 endtask
 
@@ -316,6 +316,7 @@ initial begin
 	acc_buf_sel_i = 0;
 	out_buf_sel_i = 0;
 	ifm_wr_chunk_count_i = 0;
+	filter_wr_chunk_count_i = 0;
 
 	fork
 		wr_ifm_buf();
