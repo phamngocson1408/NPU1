@@ -5,20 +5,23 @@
 
 //`define CHANNEL_STACKING
 
-//`define COMB_DAT_CHUNK
+`define COMB_DAT_CHUNK
+
+`define RUN_TIME		10
 
 `define MEM_SIZE		128	//Bytes
 `define BUS_SIZE		8	//Bytes
-`define PREFIX_SUM_SIZE		128	//bits
+`define PREFIX_SUM_SIZE		8	//bits
 `define OUTPUT_BUF_SIZE		32	//bits
 `define OUTPUT_BUF_NUM		16 
-`define COMPUTE_UNIT_NUM	32 
+`define COMPUTE_UNIT_NUM	8 
 `define DAT_SIZE		8	//bits 
 `define PARTIAL_OUT_SIZE	32	//bits 
 
 `define IFM_DENSE_RATE 		70
 `define FILTER_DENSE_RATE 	70
 
+// Do not change when FULL_CHANNEL and CHANNEL_PADDING
 `define CHANNEL_NUM 		8
 
 

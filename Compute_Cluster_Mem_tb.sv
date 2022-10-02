@@ -51,7 +51,6 @@ end
  	localparam int SIM_FILTER_REF_NUM = SIM_CHUNK_DAT_SIZE / `CHANNEL_NUM;
  	localparam int SIM_IFM_SHIFT_NUM = 1;
 	localparam int SIM_OUTPUT_NUM = (SIM_FILTER_REF_NUM <= `OUTPUT_BUF_NUM) ? SIM_FILTER_REF_NUM : `OUTPUT_BUF_NUM;
- 	
  `endif
 `endif
 
@@ -59,6 +58,7 @@ localparam int SIM_WR_DAT_CYC_NUM = ((SIM_CHUNK_DAT_SIZE % `BUS_SIZE)!=0) ? SIM_
 					: SIM_CHUNK_DAT_SIZE / `BUS_SIZE;
 localparam int SIM_RD_SPARSEMAP_NUM = ((SIM_CHUNK_DAT_SIZE % `PREFIX_SUM_SIZE)!=0) ? SIM_CHUNK_DAT_SIZE / `PREFIX_SUM_SIZE + 1
 					: SIM_CHUNK_DAT_SIZE / `PREFIX_SUM_SIZE;
+
 localparam int PARAM_WR_DAT_CYC_NUM = `MEM_SIZE/`BUS_SIZE;
 localparam int PARAM_RD_SPARSEMAP_NUM = `MEM_SIZE/`PREFIX_SUM_SIZE;
 
@@ -100,17 +100,17 @@ logic [$clog2(`OUTPUT_BUF_NUM)-1:0] out_buf_sel_i;
 logic [$clog2(`COMPUTE_UNIT_NUM)-1:0] com_unit_out_buf_sel_i = 0;
 logic [`OUTPUT_BUF_SIZE-1:0] out_buf_dat_o;
 
-logic [`BUS_SIZE-1:0] 		mem_ifm_wr_sparsemap_i;
-logic [`BUS_SIZE-1:0][7:0] 	mem_ifm_wr_nonzero_data_i;
-logic 				mem_ifm_wr_valid_i;
-logic [$clog2(PARAM_WR_DAT_CYC_NUM)-1:0] mem_ifm_wr_dat_count_i;
-logic [$clog2(SRAM_IFM_NUM)-1:0] 	mem_ifm_wr_chunk_count_i;
+logic [`BUS_SIZE-1:0] 			 mem_ifm_wr_sparsemap_w;
+logic [`BUS_SIZE-1:0][7:0] 		 mem_ifm_wr_nonzero_data_w;
+logic 					 mem_ifm_wr_valid_w;
+logic [$clog2(PARAM_WR_DAT_CYC_NUM)-1:0] mem_ifm_wr_dat_count_w;
+logic [$clog2(SRAM_IFM_NUM)-1:0] 	 mem_ifm_wr_chunk_count_w;
 
-logic [`BUS_SIZE-1:0] 		mem_filter_wr_sparsemap_i;
-logic [`BUS_SIZE-1:0][7:0] 	mem_filter_wr_nonzero_data_i;
-logic 				mem_filter_wr_valid_i;
-logic [$clog2(PARAM_WR_DAT_CYC_NUM)-1:0] mem_filter_wr_dat_count_i;
-logic [$clog2(SRAM_FILTER_NUM)-1:0] 	mem_filter_wr_chunk_count_i;
+logic [`BUS_SIZE-1:0] 			 mem_filter_wr_sparsemap_w;
+logic [`BUS_SIZE-1:0][7:0] 		 mem_filter_wr_nonzero_data_w;
+logic 					 mem_filter_wr_valid_w;
+logic [$clog2(PARAM_WR_DAT_CYC_NUM)-1:0] mem_filter_wr_dat_count_w;
+logic [$clog2(SRAM_FILTER_NUM)-1:0] 	 mem_filter_wr_chunk_count_w;
 
 Compute_Cluster_Mem u_Compute_Cluster_Mem (
 	 .rst_i
@@ -143,17 +143,40 @@ Compute_Cluster_Mem u_Compute_Cluster_Mem (
 	,.com_unit_out_buf_sel_i
 	,.out_buf_dat_o
 
-	,.mem_ifm_wr_sparsemap_i
-	,.mem_ifm_wr_nonzero_data_i
-	,.mem_ifm_wr_valid_i
-	,.mem_ifm_wr_dat_count_i
-	,.mem_ifm_wr_chunk_count_i
+	,.mem_ifm_wr_sparsemap_i(mem_ifm_wr_sparsemap_w)
+	,.mem_ifm_wr_nonzero_data_i(mem_ifm_wr_nonzero_data_w)
+	,.mem_ifm_wr_valid_i(mem_ifm_wr_valid_w)
+	,.mem_ifm_wr_dat_count_i(mem_ifm_wr_dat_count_w)
+	,.mem_ifm_wr_chunk_count_i(mem_ifm_wr_chunk_count_w)
 
-	,.mem_filter_wr_sparsemap_i
-	,.mem_filter_wr_nonzero_data_i
-	,.mem_filter_wr_valid_i
-	,.mem_filter_wr_dat_count_i
-	,.mem_filter_wr_chunk_count_i
+	,.mem_filter_wr_sparsemap_i(mem_filter_wr_sparsemap_w)
+	,.mem_filter_wr_nonzero_data_i(mem_filter_wr_nonzero_data_w)
+	,.mem_filter_wr_valid_i(mem_filter_wr_valid_w)
+	,.mem_filter_wr_dat_count_i(mem_filter_wr_dat_count_w)
+	,.mem_filter_wr_chunk_count_i(mem_filter_wr_chunk_count_w)
+);
+
+logic mem_gen_start_i;
+logic mem_gen_finish_w;
+
+Mem_Gen Mem_Gen (
+	 .rst_i
+	,.clk_i
+
+	,.mem_gen_start_i
+	,.mem_gen_finish_o(mem_gen_finish_w)
+
+	,.mem_ifm_wr_sparsemap_o(mem_ifm_wr_sparsemap_w)
+	,.mem_ifm_wr_nonzero_data_o(mem_ifm_wr_nonzero_data_w)
+	,.mem_ifm_wr_valid_o(mem_ifm_wr_valid_w)
+	,.mem_ifm_wr_dat_count_o(mem_ifm_wr_dat_count_w)
+	,.mem_ifm_wr_chunk_count_o(mem_ifm_wr_chunk_count_w)
+
+	,.mem_filter_wr_sparsemap_o(mem_filter_wr_sparsemap_w)
+	,.mem_filter_wr_nonzero_data_o(mem_filter_wr_nonzero_data_w)
+	,.mem_filter_wr_valid_o(mem_filter_wr_valid_w)
+	,.mem_filter_wr_dat_count_o(mem_filter_wr_dat_count_w)
+	,.mem_filter_wr_chunk_count_o(mem_filter_wr_chunk_count_w)
 );
 
 integer filter_ref_num;
@@ -161,142 +184,26 @@ integer ifm_shift_num;
 
 logic ifm_wr_last_w;
 
-// Gennerate IFM
-logic [`MEM_SIZE-1:0][7:0] mem_ifm_non_zero_data_r = {`MEM_SIZE{8'h00}};
-logic [`MEM_SIZE-1:0] mem_ifm_sparse_map_r ;
-
-task automatic gen_ifm_buf();
-	integer i;
-	integer j=0;
-	integer data;
-	integer valid_dat;
-
-	for (i=0; i<SRAM_CHUNK_SIZE; i=i+1) begin
-`ifdef SHORT_CHANNEL
- `ifdef CHANNEL_PADDING
- 		if (i < `CHANNEL_NUM) begin
- 			data = $urandom_range(256,1);
- 			valid_dat = $urandom_range(100,0);
- 		end
- 		else begin
- 			data = 0;
- 			valid_dat = 100;
- 		end
- `else
- 		data = $urandom_range(256,1);
- 		valid_dat = $urandom_range(100,0);
- `endif
-`else	// not define SHORT_CHANNEL
- 		data = $urandom_range(256,1);
- 		valid_dat = $urandom_range(100,0);
-`endif
-		if (valid_dat <= `IFM_DENSE_RATE) begin
-			mem_ifm_non_zero_data_r[j] = data;
-			mem_ifm_sparse_map_r[i] = 1;
-			j = j+1;
-		end
-		else begin
-			mem_ifm_sparse_map_r[i] = 0;
-		end
-	end
-endtask
-
-task wr_ifm_buf();
-	mem_ifm_wr_valid_i = 1'b1;
-	mem_ifm_wr_chunk_count_i = 0;
-	repeat (SRAM_IFM_NUM) begin
-		gen_ifm_buf();
-		mem_ifm_wr_dat_count_i = 0;
-		mem_ifm_wr_sparsemap_i = mem_ifm_sparse_map_r[`BUS_SIZE*mem_ifm_wr_dat_count_i +: `BUS_SIZE];
-		mem_ifm_wr_nonzero_data_i = mem_ifm_non_zero_data_r[`BUS_SIZE*mem_ifm_wr_dat_count_i +: `BUS_SIZE];
-		repeat(SIM_WR_DAT_CYC_NUM) @(posedge (clk_i && !rst_i)) begin
-			mem_ifm_wr_dat_count_i = mem_ifm_wr_dat_count_i + 1;
-			mem_ifm_wr_sparsemap_i = mem_ifm_sparse_map_r[`BUS_SIZE*mem_ifm_wr_dat_count_i +: `BUS_SIZE];
-			mem_ifm_wr_nonzero_data_i = mem_ifm_non_zero_data_r[`BUS_SIZE*mem_ifm_wr_dat_count_i +: `BUS_SIZE];
-		end
-		mem_ifm_wr_chunk_count_i = mem_ifm_wr_chunk_count_i + 1;
-	end
-	mem_ifm_wr_valid_i = 1'b0;
-endtask
-
-//Generate Filer
-logic [`MEM_SIZE-1:0][7:0] mem_filter_non_zero_data_r = {`MEM_SIZE{8'h00}};
-logic [`MEM_SIZE-1:0] mem_filter_sparse_map_r ;
-
-task automatic gen_filter_buf();
-	integer i;
-	integer j=0;
-	integer data;
-	integer valid_dat;
-
-	for (i=0; i<SRAM_CHUNK_SIZE; i=i+1) begin
-`ifdef SHORT_CHANNEL
- `ifdef CHANNEL_PADDING
- 		if (i < `CHANNEL_NUM) begin
- 			data = $urandom_range(256,1);
- 			valid_dat = $urandom_range(100,0);
- 		end
- 		else begin
- 			data = 0;
- 			valid_dat = 100;
- 		end
- `else
- 		data = $urandom_range(256,1);
- 		valid_dat = $urandom_range(100,0);
- `endif
-`else	// not define SHORT_CHANNEL
- 		data = $urandom_range(256,1);
- 		valid_dat = $urandom_range(100,0);
-`endif
-		if (valid_dat <= `FILTER_DENSE_RATE) begin
-			mem_filter_non_zero_data_r[j] = data;
-			mem_filter_sparse_map_r[i] = 1;
-			j = j+1;
-		end
-		else begin
-			mem_filter_sparse_map_r[i] = 0;
-		end
-	end
-endtask
-
-task wr_filter_buf();
-	mem_filter_wr_valid_i = 1'b1;
-	mem_filter_wr_chunk_count_i = 0;
-	repeat (SRAM_FILTER_NUM) begin
-		gen_filter_buf();
-		mem_filter_wr_dat_count_i = 0;
-		mem_filter_wr_sparsemap_i = mem_filter_sparse_map_r[`BUS_SIZE*mem_filter_wr_dat_count_i +: `BUS_SIZE];
-		mem_filter_wr_nonzero_data_i = mem_filter_non_zero_data_r[`BUS_SIZE*mem_filter_wr_dat_count_i +: `BUS_SIZE];
-		repeat(SIM_WR_DAT_CYC_NUM) @(posedge (clk_i && !rst_i)) begin
-			gen_filter_buf();
-			mem_filter_wr_dat_count_i = mem_filter_wr_dat_count_i + 1;
-			mem_filter_wr_sparsemap_i = mem_filter_sparse_map_r[`BUS_SIZE*mem_filter_wr_dat_count_i +: `BUS_SIZE];
-			mem_filter_wr_nonzero_data_i = mem_filter_non_zero_data_r[`BUS_SIZE*mem_filter_wr_dat_count_i +: `BUS_SIZE];
-		end
-		mem_filter_wr_chunk_count_i = mem_filter_wr_chunk_count_i + 1;
-	end
-	mem_filter_wr_valid_i = 1'b0;
-endtask
 
 task rd_ifm_buf();
 	ifm_wr_valid_i = 1'b1;
 	ifm_wr_count_i = 0;
-	repeat(SIM_WR_DAT_CYC_NUM) @(posedge (clk_i && !rst_i)) begin
+	repeat(SIM_WR_DAT_CYC_NUM) begin
+		@(posedge clk_i);
 		ifm_wr_count_i = ifm_wr_count_i+1;
 	end
 	ifm_wr_valid_i = 1'b0;
-	ifm_wr_count_i = 0;
 	ifm_wr_chunk_count_i = ifm_wr_chunk_count_i + 1;
 endtask
 
 task rd_filter_buf();
 	filter_wr_valid_i = 1'b1;
 	filter_wr_count_i = 0;
-	repeat(SIM_WR_DAT_CYC_NUM) @(posedge (clk_i && !rst_i)) begin
+	repeat(SIM_WR_DAT_CYC_NUM) begin
+		@(posedge clk_i);
 		filter_wr_count_i = filter_wr_count_i+1;
 	end
 	filter_wr_valid_i = 1'b0;
-	filter_wr_count_i = 0;
 	filter_wr_chunk_count_i = filter_wr_chunk_count_i + 1;
 endtask
 
@@ -318,11 +225,15 @@ initial begin
 	ifm_wr_chunk_count_i = 0;
 	filter_wr_chunk_count_i = 0;
 
-	fork
-		wr_ifm_buf();
-		wr_filter_buf();
-	join
+	// Write mem
+	mem_gen_start_i = 1'b1;
+	@(posedge clk_i);
+	mem_gen_start_i = 1'b0;
 
+	// Finish wrting mem
+	@(posedge mem_gen_finish_w);
+
+	// Read mem to chunks
 	fork
 		begin
 			filter_wr_sel_i = 1'b0;
@@ -333,10 +244,12 @@ initial begin
 			rd_ifm_buf();
 		end
 	join
-
+	
+	// Finish redaing chunks & start processing
 	ifm_rd_sel_i = 1'b0;
 	filter_rd_sel_i = 1'b0;
 	run_valid_i = 1'b1;
+
 `ifdef SHORT_CHANNEL
  `ifdef CHANNEL_PADDING
  	fork
