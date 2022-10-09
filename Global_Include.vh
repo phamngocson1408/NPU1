@@ -14,7 +14,7 @@
 `define PREFIX_SUM_SIZE		8	//bits
 `define OUTPUT_BUF_SIZE		32	//bits
 `define OUTPUT_BUF_NUM		16 
-`define COMPUTE_UNIT_NUM	8 
+`define COMPUTE_UNIT_NUM	1 
 `define DAT_SIZE		8	//bits 
 `define PARTIAL_OUT_SIZE	32	//bits 
 

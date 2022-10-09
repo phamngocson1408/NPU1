@@ -42,7 +42,8 @@ module Compute_Cluster_Mem #(
 	,input [$clog2(PARAM_WR_DAT_CYC_NUM)-1:0] filter_wr_count_i
 	,input filter_wr_sel_i
 	,input filter_rd_sel_i
-	,input [$clog2(SRAM_FILTER_NUM)-1:0] filter_wr_chunk_count_i
+	,input [`COMPUTE_UNIT_NUM-1:0] filter_wr_chunk_sel_i
+	,input [$clog2(SRAM_FILTER_NUM)-1:0] filter_rd_sram_count_i
 
 	,input run_valid_i
 	,input total_chunk_start_i
@@ -96,7 +97,7 @@ Compute_Cluster u_Compute_Cluster (
 	,.filter_wr_count_i
 	,.filter_wr_sel_i
 	,.filter_rd_sel_i
-	,.filter_wr_order_sel_i(filter_wr_chunk_count_i[$clog2(`COMPUTE_UNIT_NUM)-1:0])
+	,.filter_wr_chunk_sel_i
 
 	,.run_valid_i
 	,.total_chunk_start_i
@@ -143,7 +144,7 @@ Mem_Filter u_Mem_Filter (
 	,.rd_sparsemap_o(filter_rd_sparsemap_o_w)
 	,.rd_nonzero_data_o(filter_rd_nonzero_data_o_w)
 	,.rd_dat_count_i(filter_wr_count_i)
-	,.rd_chunk_count_i(filter_wr_chunk_count_i)
+	,.rd_chunk_count_i(filter_rd_sram_count_i)
 );
 
 endmodule

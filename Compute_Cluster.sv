@@ -40,7 +40,7 @@ module Compute_Cluster #(
 	,input [$clog2(PARAM_WR_DAT_CYC_NUM)-1:0] filter_wr_count_i
 	,input filter_wr_sel_i
 	,input filter_rd_sel_i
-	,input [$clog2(`COMPUTE_UNIT_NUM)-1:0] filter_wr_order_sel_i
+	,input [`COMPUTE_UNIT_NUM-1:0] filter_wr_chunk_sel_i
 
 	,input run_valid_i
 	,input total_chunk_start_i
@@ -119,7 +119,7 @@ module Compute_Cluster #(
 	end
 
 	for (i=0; i<`COMPUTE_UNIT_NUM; i=i+1) begin
-		assign filter_wr_valid_w[i] = (filter_wr_order_sel_i == i) ? filter_wr_valid_i : 0;
+		assign filter_wr_valid_w[i] = filter_wr_chunk_sel_i[i] ? filter_wr_valid_i : 0;
 	end
 
 	assign total_chunk_end_o = &chunk_end_w;
