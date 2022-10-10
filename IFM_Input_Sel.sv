@@ -53,8 +53,8 @@ module IFM_Input_Sel #(
 
 `ifdef CHANNEL_STACKING
 	logic [$clog2(`MEM_SIZE):0] rd_data_base_step_r;	
-
-	always_ff @(posedge clk_i) begin
+	wire gated_clk_0_w = clk_i && (rst_i || (rd_sparsemap_step_i == rd_sparsemap_addr_i));
+	always_ff @(posedge gated_clk_0_w) begin
 		if (rst_i) begin
 			rd_data_base_step_r <= {($clog2(`MEM_SIZE) + 1){1'b0}};
 		end
@@ -63,7 +63,8 @@ module IFM_Input_Sel #(
 		end
 	end
 
-	always_ff @(posedge clk_i) begin
+	wire gated_clk_1_w = clk_i && (rst_i || chunk_start_i || pri_enc_end_i);
+	always_ff @(posedge gated_clk_1_w) begin
 		if (rst_i) begin
 			rd_data_base_addr_r <= {($clog2(`MEM_SIZE) + 1){1'b0}};
 		end
@@ -82,7 +83,8 @@ module IFM_Input_Sel #(
 		end
 	end
 `elsif CHANNEL_PADDING
-	always_ff @(posedge clk_i) begin
+	wire gated_clk_w = clk_i && (rst_i || chunk_start_i || pri_enc_end_i);
+	always_ff @(posedge gated_clk_w) begin
 		if (rst_i) begin
 			rd_data_base_addr_r <= {($clog2(`MEM_SIZE) + 1){1'b0}};
 		end

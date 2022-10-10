@@ -22,7 +22,7 @@ end
 reg rst_i;
 initial begin
 	rst_i = 1;
-	#(`CYCLE*50);
+	#(`CYCLE*100);
 	@(posedge clk_i);
 	rst_i = 0;
 end
@@ -263,6 +263,10 @@ assign filter_wr_count_last_w = filter_wr_valid_i && (filter_wr_count_i == SIM_W
 
 // Initiate
 initial begin
+	ifm_wr_valid_r = 1'b0;
+	filter_wr_valid_r = 1'b0;
+	run_valid_r = 1'b0;
+
 	@(negedge rst_i) ;
 	@(posedge clk_i) ;
 

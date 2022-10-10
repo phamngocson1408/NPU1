@@ -35,7 +35,8 @@ module Output_Buffer (
 	logic [`OUTPUT_BUF_NUM-1:0][`PARTIAL_OUT_SIZE-1:0] partial_output_mem;
 
 	integer i;
-	always_ff @(posedge clk_i) begin
+	wire gated_clk_w = clk_i && (rst_i || acc_val_i);
+	always_ff @(posedge gated_clk_w) begin
 		if (rst_i) begin
 			for(i=0; i<`OUTPUT_BUF_NUM; i=i+1) begin
 				partial_output_mem[i] <= {`PARTIAL_OUT_SIZE{1'b0}};

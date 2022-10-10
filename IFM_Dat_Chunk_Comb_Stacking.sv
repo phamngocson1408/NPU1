@@ -128,7 +128,8 @@ module IFM_Dat_Chunk_Comb_Stacking #(
 				rd_data_o[i] = rd_data_w[0][i];
 		end
 	end
-
+	
+//	wire gated_clk_w = clk_i && (clk_i || ((rd_sparsemap_addr_i[i] == (PARAM_RD_SPARSEMAP_NUM-1)) && pri_enc_last_i[i]));
 	always_ff @(posedge clk_i) begin
 		for (integer i=0; i<`COMPUTE_UNIT_NUM; i=i+1) begin
 			if (rst_i) begin

@@ -157,7 +157,8 @@ module Input_Selector_v2 #(
 
 	// Calculate sparsemap addr
 `ifdef CHANNEL_STACKING
-	always_ff @(posedge clk_i) begin
+	wire gated_clk_0_w = clk_i && (rst_i || pri_enc_last_w || chunk_start_i);
+	always_ff @(posedge gated_clk_0_w) begin
 		if (rst_i) begin
 			rd_sparsemap_addr_r <= rd_sparsemap_step_i;
 		end
@@ -169,7 +170,8 @@ module Input_Selector_v2 #(
 		end
 	end
 `elsif CHANNEL_PADDING
-	always_ff @(posedge clk_i) begin
+	wire gated_clk_0_w = clk_i && (rst_i || pri_enc_last_w || chunk_start_i);
+	always_ff @(posedge gated_clk_0_w) begin
 		if (rst_i) begin
 			rd_sparsemap_addr_r <= {($clog2(PARAM_RD_SPARSEMAP_NUM)){1'b0}};
 		end
@@ -182,7 +184,8 @@ module Input_Selector_v2 #(
 	end
 `endif
 
-	always_ff @(posedge clk_i) begin
+	wire gated_clk_1_w = clk_i && (rst_i || chunk_end_o || chunk_start_i);
+	always_ff @(posedge gated_clk_1_w) begin
 		if (rst_i) begin
 			run_valid_r <= 1'b1;
 		end

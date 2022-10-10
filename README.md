@@ -25,3 +25,4 @@
 20220925-17:40 - Fix rd_total_filter_buf
 20221002 - Split Mem_Gen
 20221009 - Use nonblocking procedures in tb
+20221010 - Gated clock
