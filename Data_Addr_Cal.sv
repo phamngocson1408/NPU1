@@ -45,7 +45,13 @@ module Data_Addr_Cal #(
 		,.out_o(prefix_sum_out_w)
 	);
 
-	wire gated_clk_w = clk_i && (rst_i || pri_enc_end_i || chunk_start_i);
+	logic gated_clk_lat;
+	always_latch begin
+		if (!clk_i) begin
+			gated_clk_lat <= (rst_i || pri_enc_end_i || chunk_start_i);
+		end
+	end
+	wire gated_clk_w = clk_i && gated_clk_lat;
 	always_ff @(posedge gated_clk_w) begin
 		if (rst_i) begin
 			rd_data_base_addr_r <= {($clog2(`MEM_SIZE) + 1){1'b0}};

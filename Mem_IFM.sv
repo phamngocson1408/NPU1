@@ -47,7 +47,13 @@ module Mem_IFM #(
 	logic [SRAM_IFM_NUM-1:0][SRAM_CHUNK_SIZE-1:0][7:0] mem_nonzero_data_r;
 
 	// Write data
-	wire gated_clk_w = clk_i && (rst_i || wr_valid_i);
+	logic gated_clk_lat;
+	always_latch begin
+		if (!clk_i) begin
+			gated_clk_lat <= (rst_i || wr_valid_i);
+		end
+	end
+	wire gated_clk_w = clk_i && gated_clk_lat;
 	always_ff @(posedge gated_clk_w) begin
 		if (rst_i) begin
 			mem_sparsemap_r <= {(SRAM_IFM_NUM*SRAM_CHUNK_SIZE){1'b0}};

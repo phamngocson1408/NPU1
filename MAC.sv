@@ -36,7 +36,14 @@ module MAC (
 	logic [`DAT_SIZE*2-1:0] mul_r;
 	logic valid_r;
 	wire dat_changed_w = mul_r != {(`DAT_SIZE*2){1'b0}};
-	wire gated_clk_w = clk_i && (rst_i || valid_i || dat_changed_w);
+
+	logic gated_clk_lat;
+	always_latch begin
+		if (!clk_i) begin
+			gated_clk_lat <= (rst_i || valid_i || dat_changed_w);
+		end
+	end
+	wire gated_clk_w = clk_i && gated_clk_lat;
 	always_ff @(posedge gated_clk_w) begin
 		if (rst_i) begin
 			mul_r <= {(`DAT_SIZE*2){1'b0}};	

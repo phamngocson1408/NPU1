@@ -3,7 +3,7 @@
 
 //`define SHORT_CHANNEL
 
-//`define CHANNEL_STACKING
+`define CHANNEL_STACKING
 
 `define COMB_DAT_CHUNK
 

@@ -27,3 +27,4 @@
 20221009 - Use nonblocking procedures in tb
 20221010 - Gated clock
 20221012 - Not much changed
+20221012-17:22 - Gate clock with latch

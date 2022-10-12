@@ -22,7 +22,7 @@ end
 reg rst_i;
 initial begin
 	rst_i = 1;
-	#(`CYCLE*500);
+	#(`CYCLE*100);
 	@(posedge clk_i);
 	rst_i = 0;
 end

@@ -38,8 +38,13 @@ module Dat_Chunk_Comb #(
 	//The Data array should start from 1
 	logic [`MEM_SIZE:1][7:0] mem_nonzero_data_r;
 
-	logic gated_clk_w;
-	assign gated_clk_w = clk_i && (rst_i || wr_valid_i);
+	logic gated_clk_lat;
+	always_latch begin
+		if (!clk_i) begin
+			gated_clk_lat <= (rst_i || wr_valid_i);
+		end
+	end
+	wire gated_clk_w = clk_i && gated_clk_lat;
 
 	// Write data
 	always_ff @(posedge gated_clk_w) begin
