@@ -21,15 +21,15 @@
 
 
 module Data_Chunk_Top #(
-	 localparam int PARAM_WR_DAT_CYC_NUM = `MEM_SIZE/`BUS_SIZE
-	,localparam int PARAM_RD_SPARSEMAP_NUM = `MEM_SIZE/`PREFIX_SUM_SIZE
+//	 localparam int `WR_DAT_CYC_NUM = `CHUNK_SIZE/`BUS_SIZE
+//	,localparam int `RD_DAT_CYC_NUM = `CHUNK_SIZE/`PREFIX_SUM_SIZE
 )(
 	 input rst_i
 	,input clk_i
 	,input [`BUS_SIZE-1:0] wr_sparsemap_i
 	,input [`BUS_SIZE-1:0][7:0] wr_nonzero_data_i 
 	,input wr_valid_i
-	,input [$clog2(PARAM_WR_DAT_CYC_NUM)-1:0] wr_count_i
+	,input [$clog2(`WR_DAT_CYC_NUM)-1:0] wr_count_i
 	,input wr_sel_i
 
 	,input rd_sel_i
@@ -37,15 +37,19 @@ module Data_Chunk_Top #(
 
 	,input  [$clog2(`PREFIX_SUM_SIZE)-1:0] pri_enc_match_addr_i
 	,input pri_enc_end_i
-	,input chunk_start_i
+	,input sub_chunk_start_i
 
-	,input [$clog2(PARAM_RD_SPARSEMAP_NUM)-1:0] rd_sparsemap_addr_i
+	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_sparsemap_addr_i
 	,output logic [`PREFIX_SUM_SIZE-1:0] rd_sparsemap_o
+
+`ifdef CHANNEL_STACKING
+	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_fil_sparsemap_first_i
+`endif
 
 );
 	
 	logic [1:0] wr_val_w;
-	logic [$clog2(`MEM_SIZE):0] rd_dat_addr_w;	
+	logic [$clog2(`CHUNK_SIZE):0] rd_dat_addr_w;	
 	logic [1:0][7:0] rd_dat_w;
 	logic [1:0][`PREFIX_SUM_SIZE-1:0] rd_sparsemap_w;
 
@@ -62,6 +66,10 @@ module Data_Chunk_Top #(
 
 		,.rd_sparsemap_addr_i
 		,.rd_sparsemap_o(rd_sparsemap_w[0])
+
+`ifdef CHANNEL_STACKING
+		,.rd_fil_sparsemap_first_i
+`endif
 	);
 
 	Data_Chunk u_Data_Chunk_1 (
@@ -77,6 +85,10 @@ module Data_Chunk_Top #(
 
 		,.rd_sparsemap_addr_i
 		,.rd_sparsemap_o(rd_sparsemap_w[1])
+
+`ifdef CHANNEL_STACKING
+		,.rd_fil_sparsemap_first_i
+`endif
 	);
 
 	Data_Addr_Cal u_Data_Addr_Cal (
@@ -85,7 +97,7 @@ module Data_Chunk_Top #(
 		
 		,.pri_enc_match_addr_i
 		,.pri_enc_end_i
-		,.chunk_start_i
+		,.sub_chunk_start_i
 		,.sparsemap_i(rd_sparsemap_o)
 
 		,.rd_dat_addr_o(rd_dat_addr_w)

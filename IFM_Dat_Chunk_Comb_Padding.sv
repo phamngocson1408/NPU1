@@ -21,8 +21,8 @@
 
 
 module IFM_Dat_Chunk_Comb_Padding #(
-	 localparam int PARAM_WR_DAT_CYC_NUM = `MEM_SIZE/`BUS_SIZE
-	,localparam int PARAM_RD_SPARSEMAP_NUM = `MEM_SIZE/`PREFIX_SUM_SIZE
+//	 localparam int `WR_DAT_CYC_NUM = `CHUNK_SIZE/`BUS_SIZE
+//	,localparam int `RD_DAT_CYC_NUM = `CHUNK_SIZE/`PREFIX_SUM_SIZE
 )(
 	 input rst_i
 	,input clk_i
@@ -30,20 +30,20 @@ module IFM_Dat_Chunk_Comb_Padding #(
 	,input [`BUS_SIZE-1:0] wr_sparsemap_i
 	,input [`BUS_SIZE-1:0][7:0] wr_nonzero_data_i 
 	,input wr_valid_i
-	,input [$clog2(PARAM_WR_DAT_CYC_NUM)-1:0] wr_count_i
+	,input [$clog2(`WR_DAT_CYC_NUM)-1:0] wr_count_i
 	,input wr_sel_i
 	,input rd_sel_i
 
-	,input [`COMPUTE_UNIT_NUM-1:0][$clog2(`MEM_SIZE):0] rd_addr_i
+	,input [`COMPUTE_UNIT_NUM-1:0][$clog2(`CHUNK_SIZE):0] rd_addr_i
 	,output logic [`COMPUTE_UNIT_NUM-1:0][7:0] rd_data_o
 
-	,input [`COMPUTE_UNIT_NUM-1:0][$clog2(PARAM_RD_SPARSEMAP_NUM)-1:0] rd_sparsemap_addr_i
+	,input [`COMPUTE_UNIT_NUM-1:0][$clog2(`RD_DAT_CYC_NUM)-1:0] rd_sparsemap_addr_i
 	,output logic [`COMPUTE_UNIT_NUM-1:0][`PREFIX_SUM_SIZE-1:0] rd_sparsemap_o	
 );
 	
 	logic [1:0] wr_val_w;
-	logic [1:0][`MEM_SIZE:1][7:0] rd_nonzero_data_w;
-	logic [1:0][`MEM_SIZE-1:0] rd_sparsemap_w;
+	logic [1:0][`CHUNK_SIZE:1][7:0] rd_nonzero_data_w;
+	logic [1:0][`CHUNK_SIZE-1:0] rd_sparsemap_w;
 
 	for (genvar n=0; n<2; n=n+1) begin
 		Dat_Chunk_Comb u_Dat_Chunk_Comb (

@@ -22,11 +22,11 @@
 
 module Dat_Chunk_Comb_Dat(
 	 input rd_sel_i
-	,input [1:0][`MEM_SIZE:1][7:0] rd_nonzero_data_i
-	,input [`COMPUTE_UNIT_NUM-1:0][$clog2(`MEM_SIZE):0] rd_addr_i
+	,input [1:0][`CHUNK_SIZE:1][7:0] rd_nonzero_data_i
+	,input [`COMPUTE_UNIT_NUM-1:0][$clog2(`CHUNK_SIZE):0] rd_addr_i
 	,output logic [`COMPUTE_UNIT_NUM-1:0][7:0] rd_data_o
     );
-	logic [1:0][`COMPUTE_UNIT_NUM-1:0][$clog2(`MEM_SIZE):0] rd_addr_w;
+	logic [1:0][`COMPUTE_UNIT_NUM-1:0][$clog2(`CHUNK_SIZE):0] rd_addr_w;
 	logic [1:0][`COMPUTE_UNIT_NUM-1:0][7:0] rd_data_w;
 
 	// Read Nonzero data
@@ -34,21 +34,21 @@ module Dat_Chunk_Comb_Dat(
 		for (integer j=0; j< `COMPUTE_UNIT_NUM; j=j+1) begin
 			if (rd_sel_i) begin
 				rd_addr_w[1][j] = rd_addr_i[j];
-				rd_addr_w[0][j] = {{$clog2(`MEM_SIZE){1'b0}},1'b1};
+				rd_addr_w[0][j] = {{$clog2(`CHUNK_SIZE){1'b0}},1'b1};
 			end
 			else begin
-				rd_addr_w[1][j] = {{$clog2(`MEM_SIZE){1'b0}},1'b1};
+				rd_addr_w[1][j] = {{$clog2(`CHUNK_SIZE){1'b0}},1'b1};
 				rd_addr_w[0][j] = rd_addr_i[j];
 			end
-//			rd_addr_w[1][j] = rd_addr_i[j] &  {($clog2(`MEM_SIZE)+1){rd_sel_i}};
-//			rd_addr_w[0][j] = rd_addr_i[j] &  {($clog2(`MEM_SIZE)+1){!rd_sel_i}};
+//			rd_addr_w[1][j] = rd_addr_i[j] &  {($clog2(`CHUNK_SIZE)+1){rd_sel_i}};
+//			rd_addr_w[0][j] = rd_addr_i[j] &  {($clog2(`CHUNK_SIZE)+1){!rd_sel_i}};
 		end
 	end
 
 //	always_comb begin
 //		for (integer i=0; i<2; i=i+1) begin
 //			for (integer j=0; j<`COMPUTE_UNIT_NUM; j=j+1) begin
-//				for (integer k=1; k<`MEM_SIZE+1; k=k+1) begin
+//				for (integer k=1; k<`CHUNK_SIZE+1; k=k+1) begin
 //					if (rd_addr_w[i][j] == k)
 //						rd_data_w[i][j] = rd_nonzero_data_i[i][k];
 //				end

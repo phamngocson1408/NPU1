@@ -21,12 +21,12 @@
 
 
 module Mem_Filter #(
-	 localparam int SRAM_CHUNK_SIZE = `MEM_SIZE
- 	,localparam int SRAM_IFM_SHIFT_NUM = SRAM_CHUNK_SIZE / `CHANNEL_NUM
-	,localparam int SRAM_OUTPUT_NUM = (SRAM_IFM_SHIFT_NUM <= `OUTPUT_BUF_NUM) ? SRAM_IFM_SHIFT_NUM : `OUTPUT_BUF_NUM
- 	,localparam int SRAM_IFM_NUM = SRAM_IFM_SHIFT_NUM + SRAM_OUTPUT_NUM
- 	,localparam int SRAM_FILTER_NUM = SRAM_IFM_SHIFT_NUM * `COMPUTE_UNIT_NUM
-	,localparam int PARAM_WR_DAT_CYC_NUM = `MEM_SIZE/`BUS_SIZE
+//	 localparam int SRAM_CHUNK_SIZE = `CHUNK_SIZE
+// 	,localparam int SRAM_IFM_SHIFT_NUM = SRAM_CHUNK_SIZE / `DIVIDED_CHANNEL_NUM
+//	,localparam int SRAM_OUTPUT_NUM = (SRAM_IFM_SHIFT_NUM <= `OUTPUT_BUF_NUM) ? SRAM_IFM_SHIFT_NUM : `OUTPUT_BUF_NUM
+// 	,localparam int SRAM_IFM_NUM = SRAM_IFM_SHIFT_NUM + SRAM_OUTPUT_NUM
+// 	,localparam int SRAM_FILTER_NUM = SRAM_IFM_SHIFT_NUM * `COMPUTE_UNIT_NUM
+//	localparam int `WR_DAT_CYC_NUM = `CHUNK_SIZE/`BUS_SIZE
 )(
 	 input rst_i
 	,input clk_i
@@ -34,17 +34,17 @@ module Mem_Filter #(
 	,input [`BUS_SIZE-1:0] wr_sparsemap_i
 	,input [`BUS_SIZE-1:0][7:0] wr_nonzero_data_i
 	,input wr_valid_i
-	,input [$clog2(PARAM_WR_DAT_CYC_NUM)-1:0] wr_dat_count_i
-	,input [$clog2(SRAM_FILTER_NUM)-1:0] wr_chunk_count_i
+	,input [$clog2(`WR_DAT_CYC_NUM)-1:0] wr_dat_count_i
+	,input [$clog2(`SRAM_FILTER_NUM)-1:0] wr_chunk_count_i
 
 	,output [`BUS_SIZE-1:0] rd_sparsemap_o
 	,output [`BUS_SIZE-1:0][7:0] rd_nonzero_data_o
-	,input [$clog2(PARAM_WR_DAT_CYC_NUM)-1:0] rd_dat_count_i
-	,input [$clog2(SRAM_FILTER_NUM)-1:0] rd_chunk_count_i
+	,input [$clog2(`WR_DAT_CYC_NUM)-1:0] rd_dat_count_i
+	,input [$clog2(`SRAM_FILTER_NUM)-1:0] rd_chunk_count_i
 );
 
-	logic [SRAM_FILTER_NUM-1:0][SRAM_CHUNK_SIZE-1:0] mem_sparsemap_r;
-	logic [SRAM_FILTER_NUM-1:0][SRAM_CHUNK_SIZE-1:0][7:0] mem_nonzero_data_r;
+	logic [`SRAM_FILTER_NUM-1:0][`CHUNK_SIZE-1:0] mem_sparsemap_r;
+	logic [`SRAM_FILTER_NUM-1:0][`CHUNK_SIZE-1:0][7:0] mem_nonzero_data_r;
 
 	// Write data
 	logic gated_clk_lat;
@@ -56,12 +56,12 @@ module Mem_Filter #(
 	wire gated_clk_w = clk_i && gated_clk_lat;
 	always_ff @(posedge gated_clk_w) begin
 		if (rst_i) begin
-			mem_sparsemap_r <= {(SRAM_FILTER_NUM*SRAM_CHUNK_SIZE){1'b0}};
-			mem_nonzero_data_r <= {(SRAM_FILTER_NUM*SRAM_CHUNK_SIZE){8'h00}};
+			mem_sparsemap_r <= {(`SRAM_FILTER_NUM*`CHUNK_SIZE){1'b0}};
+			mem_nonzero_data_r <= {(`SRAM_FILTER_NUM*`CHUNK_SIZE){8'h00}};
 		end
 		else if (wr_valid_i) begin
-			for (integer i=0; i<SRAM_FILTER_NUM; i=i+1) begin 
-				for (integer j=0; j<PARAM_WR_DAT_CYC_NUM; j=j+1) begin
+			for (integer i=0; i<`SRAM_FILTER_NUM; i=i+1) begin 
+				for (integer j=0; j<`WR_DAT_CYC_NUM; j=j+1) begin
 					if ((wr_chunk_count_i == i) && (wr_dat_count_i == j)) begin
 						mem_sparsemap_r[i][`BUS_SIZE*j +: `BUS_SIZE] <= wr_sparsemap_i;
 						mem_nonzero_data_r[i][`BUS_SIZE*j +: `BUS_SIZE] <= wr_nonzero_data_i;

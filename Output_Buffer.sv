@@ -25,14 +25,14 @@ module Output_Buffer (
 	,input clk_i
 	,input [$clog2(`OUTPUT_BUF_NUM)-1:0] acc_sel_i
 	,input acc_val_i
-	,input [`PARTIAL_OUT_SIZE-1:0] acc_dat_i
-	,output [`PARTIAL_OUT_SIZE-1:0] acc_dat_o
+	,input [`OUTPUT_BUF_SIZE-1:0] acc_dat_i
+	,output [`OUTPUT_BUF_SIZE-1:0] acc_dat_o
 
-	,input [$clog2(`OUTPUT_BUF_NUM)-1:0] out_sel_i
-	,output [`PARTIAL_OUT_SIZE-1:0] out_dat_o
+//	,input [$clog2(`OUTPUT_BUF_NUM)-1:0] out_sel_i
+	,output [`OUTPUT_BUF_SIZE-1:0] out_dat_o
 );
 
-	logic [`OUTPUT_BUF_NUM-1:0][`PARTIAL_OUT_SIZE-1:0] partial_output_mem;
+	logic [`OUTPUT_BUF_NUM-1:0][`OUTPUT_BUF_SIZE-1:0] partial_output_mem;
 
 	integer i;
 
@@ -46,7 +46,7 @@ module Output_Buffer (
 	always_ff @(posedge gated_clk_w) begin
 		if (rst_i) begin
 			for(i=0; i<`OUTPUT_BUF_NUM; i=i+1) begin
-				partial_output_mem[i] <= {`PARTIAL_OUT_SIZE{1'b0}};
+				partial_output_mem[i] <= {`OUTPUT_BUF_SIZE{1'b0}};
 			end
 		end
 		else if (acc_val_i) begin
@@ -55,6 +55,6 @@ module Output_Buffer (
 	end
 
 	assign acc_dat_o = partial_output_mem[acc_sel_i];
-	assign out_dat_o = partial_output_mem[out_sel_i];
+	assign out_dat_o = acc_dat_o;
 
 endmodule

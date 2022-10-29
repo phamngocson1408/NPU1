@@ -21,48 +21,50 @@
 
 
 module Compute_Unit_Top #(
-	 localparam int PARAM_WR_DAT_CYC_NUM = `MEM_SIZE/`BUS_SIZE
-	,localparam int PARAM_RD_SPARSEMAP_NUM = `MEM_SIZE/`PREFIX_SUM_SIZE
+//	 localparam int `WR_DAT_CYC_NUM = `CHUNK_SIZE/`BUS_SIZE
+//	,localparam int `RD_DAT_CYC_NUM = `CHUNK_SIZE/`PREFIX_SUM_SIZE
 )(
 	 input rst_i
 	,input clk_i
 
 `ifdef COMB_DAT_CHUNK
-	,output [$clog2(`MEM_SIZE):0] rd_addr_o
+	,output [$clog2(`CHUNK_SIZE):0] rd_addr_o
 	,input [7:0] rd_data_i
-	,output [$clog2(PARAM_RD_SPARSEMAP_NUM)-1:0] rd_sparsemap_addr_o
+	,output [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_sparsemap_addr_o
 	,input [`PREFIX_SUM_SIZE-1:0] rd_sparsemap_i	
 `else
         ,input [`BUS_SIZE-1:0] ifm_sparsemap_i
         ,input [`BUS_SIZE-1:0][7:0] ifm_nonzero_data_i
-        ,input ifm_wr_valid_i
-        ,input [$clog2(PARAM_WR_DAT_CYC_NUM)-1:0] ifm_wr_count_i
-        ,input ifm_wr_sel_i
-        ,input ifm_rd_sel_i	
+        ,input ifm_chunk_wr_valid_i
+        ,input [$clog2(`WR_DAT_CYC_NUM)-1:0] ifm_chunk_wr_count_i
+        ,input ifm_chunk_wr_sel_i
+        ,input ifm_chunk_rd_sel_i	
 `endif
 
 	,input [`BUS_SIZE-1:0] filter_sparsemap_i
 	,input [`BUS_SIZE-1:0][7:0] filter_nonzero_data_i
-	,input filter_wr_valid_i
-	,input [$clog2(PARAM_WR_DAT_CYC_NUM)-1:0] filter_wr_count_i
-	,input filter_wr_sel_i
-	,input filter_rd_sel_i
+	,input filter_chunk_wr_valid_i
+	,input [$clog2(`WR_DAT_CYC_NUM)-1:0] filter_chunk_wr_count_i
+	,input filter_chunk_wr_sel_i
+	,input filter_chunk_rd_sel_i
 
 	,input run_valid_i
-	,input chunk_start_i
-	,input [$clog2(PARAM_RD_SPARSEMAP_NUM)-1:0] rd_sparsemap_last_i
+	,input sub_chunk_start_i
 
 `ifdef CHANNEL_STACKING
-       ,output pri_enc_last_o
-       ,input [$clog2(`PREFIX_SUM_SIZE)-1:0] shift_left_i
-       ,input [$clog2(PARAM_RD_SPARSEMAP_NUM)-1:0] rd_sparsemap_step_i
+	,input [$clog2(`PREFIX_SUM_SIZE)-1:0] sparsemap_shift_left_i
+	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_ifm_sparsemap_first_i
+	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_ifm_sparsemap_next_i
+	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_fil_sparsemap_first_i
+	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_fil_sparsemap_last_i
+	,input [$clog2(`LAYER_FILTER_SIZE_MAX)-1:0] rd_fil_nonzero_dat_first_i
 `endif
 
-	,output chunk_end_o
+	,output sub_chunk_end_o
 
 	,input [$clog2(`OUTPUT_BUF_NUM)-1:0] acc_buf_sel_i
 
-	,input [$clog2(`OUTPUT_BUF_NUM)-1:0] out_buf_sel_i
+//	,input [$clog2(`OUTPUT_BUF_NUM)-1:0] out_buf_sel_i
 	,output [`OUTPUT_BUF_SIZE-1:0] out_buf_dat_o
 );
 
@@ -82,29 +84,33 @@ module Compute_Unit_Top #(
 `else
 		,.ifm_sparsemap_i
 		,.ifm_nonzero_data_i
-		,.ifm_wr_valid_i
-		,.ifm_wr_count_i
-		,.ifm_wr_sel_i
-		,.ifm_rd_sel_i
+		,.ifm_chunk_wr_valid_i
+		,.ifm_chunk_wr_count_i
+		,.ifm_chunk_wr_sel_i
+		,.ifm_chunk_rd_sel_i
 `endif
 		
 		,.filter_sparsemap_i
 		,.filter_nonzero_data_i
-		,.filter_wr_valid_i
-		,.filter_wr_count_i
-		,.filter_wr_sel_i
-		,.filter_rd_sel_i
+		,.filter_chunk_wr_valid_i
+		,.filter_chunk_wr_count_i
+		,.filter_chunk_wr_sel_i
+		,.filter_chunk_rd_sel_i
 		
 		,.run_valid_i
-		,.chunk_start_i
-		,.rd_sparsemap_last_i
+		,.sub_chunk_start_i
+
 `ifdef CHANNEL_STACKING
-       	,.pri_enc_last_o
-       	,.shift_left_i
-       	,.rd_sparsemap_step_i
+		,.pri_enc_last_o()
+		,.sparsemap_shift_left_i
+		,.rd_ifm_sparsemap_first_i
+		,.rd_ifm_sparsemap_next_i
+		,.rd_fil_sparsemap_first_i
+		,.rd_fil_sparsemap_last_i
+		,.rd_fil_nonzero_dat_first_i
 `endif
 
-		,.chunk_end_o
+		,.sub_chunk_end_o
 		
 		,.acc_dat_i(acc_dat_i_w)
 		,.acc_val_o(acc_val_o_w)
@@ -120,7 +126,7 @@ module Compute_Unit_Top #(
 		,.acc_dat_i(acc_dat_o_w)
 		,.acc_dat_o(acc_dat_i_w)
 
-		,.out_sel_i(out_buf_sel_i)
+//		,.out_sel_i(out_buf_sel_i)
 		,.out_dat_o(out_buf_dat_o)
 	);
 	

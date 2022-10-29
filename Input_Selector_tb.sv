@@ -24,7 +24,7 @@ module Input_Selector_tb(
 
     );
 
-parameter MEM_SIZE = 128;	//Bytes
+parameter CHUNK_SIZE = 128;	//Bytes
 parameter BUS_SIZE = 8;		//Bytes
 parameter PREFIX_SUM_SIZE = 8;	//bits
 parameter OUTPUT_BUF_SIZE = 32; // bits
@@ -55,21 +55,21 @@ end
 logic [7:0] ifm_data_o;
 logic [7:0] filter_data_o;
 logic data_valid_o;
-logic chunk_end_o;
+logic sub_chunk_end_o;
 logic ifm_wr_ready_o;
 logic filter_wr_ready_o;
 logic [OUTPUT_BUF_SIZE-1:0] out_buf_dat_o;
 
 
-localparam DATA_IN_CYCLE_NUM = MEM_SIZE/BUS_SIZE;
+localparam DATA_IN_CYCLE_NUM = CHUNK_SIZE/BUS_SIZE;
 
-logic [MEM_SIZE-1:0][7:0] mem_ifm_non_zero_data_r = {MEM_SIZE{8'h00}};
-logic [MEM_SIZE-1:0] mem_ifm_sparse_map_r ;
+logic [CHUNK_SIZE-1:0][7:0] mem_ifm_non_zero_data_r = {CHUNK_SIZE{8'h00}};
+logic [CHUNK_SIZE-1:0] mem_ifm_sparse_map_r ;
 logic [BUS_SIZE-1:0][7:0] ifm_non_zero_data_r;
 logic [BUS_SIZE-1:0] ifm_sparse_map_r ;
 logic ifm_wr_valid_i_r;
-logic [MEM_SIZE-1:0][7:0] mem_filter_non_zero_data_r = {MEM_SIZE{8'h00}};
-logic [MEM_SIZE-1:0] mem_filter_sparse_map_r ;
+logic [CHUNK_SIZE-1:0][7:0] mem_filter_non_zero_data_r = {CHUNK_SIZE{8'h00}};
+logic [CHUNK_SIZE-1:0] mem_filter_sparse_map_r ;
 logic [BUS_SIZE-1:0][7:0] filter_non_zero_data_r;
 logic [BUS_SIZE-1:0] filter_sparse_map_r ;
 logic filter_wr_valid_i_r;
@@ -79,7 +79,7 @@ logic [$clog2(OUTPUT_BUF_NUM)-1:0] out_buf_sel_r;
 
 
 Compute_Unit_Top #(
-	 .MEM_SIZE(MEM_SIZE)
+	 .CHUNK_SIZE(CHUNK_SIZE)
 	,.BUS_SIZE(BUS_SIZE)
 	,.PREFIX_SUM_SIZE(PREFIX_SUM_SIZE)
 	,.OUTPUT_BUF_SIZE(OUTPUT_BUF_SIZE)
@@ -89,14 +89,14 @@ Compute_Unit_Top #(
 	,.clk_i(CLK)
 	,.ifm_sparsemap_i(ifm_sparse_map_r)
 	,.ifm_nonzero_data_i(ifm_non_zero_data_r)
-	,.ifm_wr_valid_i(ifm_wr_valid_i_r)	
+	,.ifm_chunk_wr_valid_i(ifm_wr_valid_i_r)	
 	,.ifm_wr_ready_o
 	,.filter_sparsemap_i(filter_sparse_map_r)
 	,.filter_nonzero_data_i(filter_non_zero_data_r)
-	,.filter_wr_valid_i(filter_wr_valid_i_r)	
+	,.filter_chunk_wr_valid_i(filter_wr_valid_i_r)	
 	,.filter_wr_ready_o
 
-	,.chunk_end_o
+	,.sub_chunk_end_o
 
 	,.acc_buf_sel_i(acc_buf_sel_r)
 	,.out_buf_sel_i(out_buf_sel_r)
@@ -104,16 +104,16 @@ Compute_Unit_Top #(
 );
 
 //Stimulate
-//logic [$clog2(MEM_SIZE):0] j_0=1;
-//logic [$clog2(MEM_SIZE):0] j_1=1;
+//logic [$clog2(CHUNK_SIZE):0] j_0=1;
+//logic [$clog2(CHUNK_SIZE):0] j_1=1;
 
 task ifm_mem_gen();
 	integer i;
-	logic [$clog2(MEM_SIZE):0] j=0;
+	logic [$clog2(CHUNK_SIZE):0] j=0;
 	logic [7:0] data;
 	integer low_bound = $urandom_range(10,3);
 
-	for (i=0; i<MEM_SIZE; i=i+1) begin
+	for (i=0; i<CHUNK_SIZE; i=i+1) begin
 		data = $urandom_range(256,0);
 
 		if (data > 10*low_bound) begin
@@ -148,10 +148,10 @@ endtask
 
 task filter_mem_gen();
 	integer i;
-	logic [$clog2(MEM_SIZE):0] j=0;
+	logic [$clog2(CHUNK_SIZE):0] j=0;
 	logic [7:0] data;
 
-	for (i=0; i<MEM_SIZE; i=i+1) begin
+	for (i=0; i<CHUNK_SIZE; i=i+1) begin
 		data = $urandom_range(256,0);
 
 		if (data > 50) begin
@@ -194,7 +194,7 @@ initial begin
 	#cyc;
 	ifm_input_gen();
 	//Generate data
-	repeat(10) @(negedge chunk_end_o) begin
+	repeat(10) @(negedge sub_chunk_end_o) begin
 		acc_buf_sel_r = acc_buf_sel_r + 1;
 		out_buf_sel_r = out_buf_sel_r + 1;
 		ifm_input_gen();

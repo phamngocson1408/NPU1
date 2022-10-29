@@ -9,20 +9,45 @@
 
 `define RUN_TIME		10
 
-`define MEM_SIZE		128	//Bytes
+`ifdef CHANNEL_STACKING
+	`define CHUNK_SIZE	200	//Bytes
+`elsif CHANNEL_PADDING
+	`define CHUNK_SIZE	128	//Bytes
+`endif
+
 `define BUS_SIZE		8	//Bytes
 `define PREFIX_SUM_SIZE		8	//bits
 `define OUTPUT_BUF_SIZE		32	//bits
-`define OUTPUT_BUF_NUM		16 
+`define OUTPUT_BUF_NUM		100 
 `define COMPUTE_UNIT_NUM	1 
 `define DAT_SIZE		8	//bits 
-`define PARTIAL_OUT_SIZE	32	//bits 
+`define DIVIDED_CHANNEL_NUM 	8
 
 `define IFM_DENSE_RATE 		70
 `define FILTER_DENSE_RATE 	70
 
 // Do not change when FULL_CHANNEL and CHANNEL_PADDING
-`define CHANNEL_NUM 		8
+`define LAYER_CHANNEL_NUM 	64
+`define LAYER_FILTER_SIZE_MAX 	5
+`define LAYER_FILTER_SIZE_X 	5
+`define LAYER_FILTER_SIZE_Y 	5
+`define LAYER_OUTPUT_SIZE_X 	10
+`define LAYER_OUTPUT_SIZE_Y 	10
+
+`define SRAM_IFM_NUM 		1000
+`define SRAM_FILTER_NUM 	100
+
+`define WR_DAT_CYC_NUM		`CHUNK_SIZE/`BUS_SIZE
+`define RD_DAT_CYC_NUM		`CHUNK_SIZE/`PREFIX_SUM_SIZE
+
+`ifdef CHANNEL_STACKING
+	`define SIM_CHUNK_SIZE	`LAYER_FILTER_SIZE_X * `LAYER_FILTER_SIZE_Y * `DIVIDED_CHANNEL_NUM	//Bytes
+`elsif CHANNEL_PADDING
+	`define SIM_CHUNK_SIZE	128	//Bytes
+`endif
+
+`define SIM_WR_DAT_CYC_NUM	`SIM_CHUNK_SIZE/`BUS_SIZE
+`define SIM_RD_SPARSEMAP_NUM	`SIM_CHUNK_SIZE/`PREFIX_SUM_SIZE
 
 
 `ifdef SHORT_CHANNEL

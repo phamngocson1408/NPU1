@@ -21,8 +21,8 @@
 
 
 module Dat_Chunk_Comb_Dat_Sel(
-	 input [`MEM_SIZE:1][7:0] rd_nonzero_data_i
-	,input [`COMPUTE_UNIT_NUM-1:0][$clog2(`MEM_SIZE):0] rd_addr_i
+	 input [`CHUNK_SIZE:1][7:0] rd_nonzero_data_i
+	,input [`COMPUTE_UNIT_NUM-1:0][$clog2(`CHUNK_SIZE):0] rd_addr_i
 	,output logic [`COMPUTE_UNIT_NUM-1:0][7:0] rd_data_o
     );
 

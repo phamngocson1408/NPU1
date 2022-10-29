@@ -25,7 +25,7 @@ module Compute_Cluster_tb(
 
     );
 
-parameter MEM_SIZE = 128;	//Bytes
+parameter CHUNK_SIZE = 128;	//Bytes
 parameter BUS_SIZE = 8;		//Bytes
 parameter PREFIX_SUM_SIZE = `PREFIX_SUM_SIZE;	//bits
 parameter OUTPUT_BUF_SIZE = 32; // bits
@@ -56,32 +56,32 @@ initial begin
 end
 
 //Instance
-localparam DATA_IN_CYCLE_NUM = MEM_SIZE/BUS_SIZE;
+localparam DATA_IN_CYCLE_NUM = CHUNK_SIZE/BUS_SIZE;
 
-logic [MEM_SIZE-1:0][7:0] mem_ifm_non_zero_data_r = {MEM_SIZE{8'h00}};
-logic [MEM_SIZE-1:0] mem_ifm_sparse_map_r ;
+logic [CHUNK_SIZE-1:0][7:0] mem_ifm_non_zero_data_r = {CHUNK_SIZE{8'h00}};
+logic [CHUNK_SIZE-1:0] mem_ifm_sparse_map_r ;
 
 logic [BUS_SIZE-1:0][7:0] ifm_nonzero_data_r;
 logic [BUS_SIZE-1:0] ifm_sparse_map_r ;
 logic ifm_wr_valid_r;
-logic [$clog2(MEM_SIZE/BUS_SIZE)-1:0] ifm_wr_count_r ;
+logic [$clog2(CHUNK_SIZE/BUS_SIZE)-1:0] ifm_wr_count_r ;
 logic ifm_wr_sel_r;
 logic ifm_rd_sel_r;
 
-logic [MEM_SIZE-1:0][7:0] mem_filter_non_zero_data_r = {MEM_SIZE{8'h00}};
-logic [MEM_SIZE-1:0] mem_filter_sparse_map_r ;
+logic [CHUNK_SIZE-1:0][7:0] mem_filter_non_zero_data_r = {CHUNK_SIZE{8'h00}};
+logic [CHUNK_SIZE-1:0] mem_filter_sparse_map_r ;
 
 logic [BUS_SIZE-1:0][7:0] filter_nonzero_data_r;
 logic [BUS_SIZE-1:0] filter_sparse_map_r ;
 logic filter_wr_valid_r;
-logic [$clog2(MEM_SIZE/BUS_SIZE)-1:0] filter_wr_count_r ;
+logic [$clog2(CHUNK_SIZE/BUS_SIZE)-1:0] filter_wr_count_r ;
 logic filter_wr_sel_r;
 logic filter_rd_sel_r;
 logic [$clog2(OUTPUT_BUF_NUM)-1:0] filter_wr_order_sel_r;
 
 logic init_r;
 logic chunk_start_r;
-logic chunk_end_o;
+logic sub_chunk_end_o;
 
 logic [$clog2(OUTPUT_BUF_NUM)-1:0] acc_buf_sel_r;
 logic [$clog2(OUTPUT_BUF_NUM)-1:0] out_buf_sel_r;
@@ -91,7 +91,7 @@ logic [OUTPUT_BUF_SIZE-1:0] out_buf_dat_o;
 
 
 Compute_Cluster #(
-	 .MEM_SIZE(MEM_SIZE)
+	 .CHUNK_SIZE(CHUNK_SIZE)
 	,.BUS_SIZE(BUS_SIZE)
 	,.PREFIX_SUM_SIZE(PREFIX_SUM_SIZE)
 	,.OUTPUT_BUF_SIZE(OUTPUT_BUF_SIZE)
@@ -103,22 +103,22 @@ Compute_Cluster #(
 
 	,.ifm_sparsemap_i(ifm_sparse_map_r)
 	,.ifm_nonzero_data_i(ifm_nonzero_data_r)
-	,.ifm_wr_valid_i(ifm_wr_valid_r)	
-	,.ifm_wr_count_i(ifm_wr_count_r)	
-	,.ifm_wr_sel_i(ifm_wr_sel_r)	
-	,.ifm_rd_sel_i(ifm_rd_sel_r)	
+	,.ifm_chunk_wr_valid_i(ifm_wr_valid_r)	
+	,.ifm_chunk_wr_count_i(ifm_wr_count_r)	
+	,.ifm_chunk_wr_sel_i(ifm_wr_sel_r)	
+	,.ifm_chunk_rd_sel_i(ifm_rd_sel_r)	
 
 	,.filter_sparsemap_i(filter_sparse_map_r)
 	,.filter_nonzero_data_i(filter_nonzero_data_r)
-	,.filter_wr_valid_i(filter_wr_valid_r)	
-	,.filter_wr_count_i(filter_wr_count_r)	
-	,.filter_wr_sel_i(filter_wr_sel_r)	
-	,.filter_rd_sel_i(filter_rd_sel_r)	
+	,.filter_chunk_wr_valid_i(filter_wr_valid_r)	
+	,.filter_chunk_wr_count_i(filter_wr_count_r)	
+	,.filter_chunk_wr_sel_i(filter_wr_sel_r)	
+	,.filter_chunk_rd_sel_i(filter_rd_sel_r)	
 	,.filter_wr_order_sel_i(filter_wr_order_sel_r)	
 
 	,.init_i(init_r)
-	,.chunk_start_i(chunk_start_r)
-	,.chunk_end_o
+	,.sub_chunk_start_i(chunk_start_r)
+	,.sub_chunk_end_o
 
 	,.acc_buf_sel_i(acc_buf_sel_r)
 	,.out_buf_sel_i(out_buf_sel_r)
@@ -128,11 +128,11 @@ Compute_Cluster #(
 
 task ifm_mem_gen();
 	integer i;
-	logic [$clog2(MEM_SIZE):0] j=0;
+	logic [$clog2(CHUNK_SIZE):0] j=0;
 	logic [7:0] data;
 	integer low_bound = $urandom_range(10,3);
 
-	for (i=0; i<MEM_SIZE; i=i+1) begin
+	for (i=0; i<CHUNK_SIZE; i=i+1) begin
 		data = $urandom_range(256,0);
 
 		if (data > 10*low_bound) begin
@@ -166,10 +166,10 @@ assign ifm_nonzero_data_r = mem_ifm_non_zero_data_r[BUS_SIZE*ifm_wr_count_r +: B
 
 task filter_mem_gen();
 	integer i;
-	logic [$clog2(MEM_SIZE):0] j=0;
+	logic [$clog2(CHUNK_SIZE):0] j=0;
 	logic [7:0] data;
 
-	for (i=0; i<MEM_SIZE; i=i+1) begin
+	for (i=0; i<CHUNK_SIZE; i=i+1) begin
 		data = $urandom_range(256,0);
 
 		if (data > 50) begin
@@ -226,7 +226,7 @@ initial begin
 	ifm_wr_sel_r = 1'b1;
 	ifm_input_gen();
 
-//	repeat(10) @(posedge chunk_end_o) begin
+//	repeat(10) @(posedge sub_chunk_end_o) begin
 //		@(posedge CLK) #1;
 //		acc_buf_sel_r = acc_buf_sel_r + 1;
 //		out_buf_sel_r = out_buf_sel_r + 1;
@@ -236,7 +236,7 @@ initial begin
 end
 
 always @(posedge CLK) begin
-	if (chunk_end_o) begin
+	if (sub_chunk_end_o) begin
 		#1;
 		acc_buf_sel_r = acc_buf_sel_r + 1;
 		out_buf_sel_r = out_buf_sel_r + 1;
@@ -246,13 +246,13 @@ always @(posedge CLK) begin
 end
 
 //initial begin
-//	repeat(10) @(posedge chunk_end_o) begin
+//	repeat(10) @(posedge sub_chunk_end_o) begin
 //		@(posedge CLK) #1; ifm_input_gen();
 //	end
 //end
 
 always @(posedge CLK) begin
-	if (chunk_end_o) begin
+	if (sub_chunk_end_o) begin
 		#1; ifm_input_gen();
 	end
 end
@@ -260,7 +260,7 @@ end
 //initial begin
 //	chunk_start_r = 1'b0;
 //
-//	repeat(10) @(posedge chunk_end_o) begin
+//	repeat(10) @(posedge sub_chunk_end_o) begin
 //		@(posedge CLK) #1 ; chunk_start_r = 1'b1;
 //		@(posedge CLK) #1 ; chunk_start_r = 1'b0;
 //	end
@@ -270,7 +270,7 @@ always @(posedge CLK) begin
 	if (RESET) begin
 		#1; chunk_start_r = 1'b0;
 	end
-	else if (chunk_end_o) begin
+	else if (sub_chunk_end_o) begin
 		#1; chunk_start_r = 1'b1;
 	end
 	else if (chunk_start_r) begin
@@ -283,7 +283,7 @@ end
 
 integer check_int = 0;
 always @(posedge CLK) begin
-	if (chunk_end_o) begin
+	if (sub_chunk_end_o) begin
 		#1; check_int = check_int + 1;
 		if (check_int == 32) $finish;
 	end
