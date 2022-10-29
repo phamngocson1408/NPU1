@@ -44,7 +44,7 @@ module Priority_Encoder_Top (
 	
 	And_Gate u_And_Gate (
 	         .IFM_i(in1_i)
-	        ,.filter_i(in2_i)
+	        ,.fil_i(in2_i)
 	        ,.out_o(and_gate_out)
 	);
 	

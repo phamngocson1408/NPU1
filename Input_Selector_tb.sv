@@ -53,26 +53,26 @@ end
 
 //Instance
 logic [7:0] ifm_data_o;
-logic [7:0] filter_data_o;
+logic [7:0] fil_data_o;
 logic data_valid_o;
 logic sub_chunk_end_o;
 logic ifm_wr_ready_o;
-logic filter_wr_ready_o;
+logic fil_wr_ready_o;
 logic [OUTPUT_BUF_SIZE-1:0] out_buf_dat_o;
 
 
 localparam DATA_IN_CYCLE_NUM = CHUNK_SIZE/BUS_SIZE;
 
-logic [CHUNK_SIZE-1:0][7:0] mem_ifm_non_zero_data_r = {CHUNK_SIZE{8'h00}};
-logic [CHUNK_SIZE-1:0] mem_ifm_sparse_map_r ;
+logic [CHUNK_SIZE-1:0][7:0] ifm_sram_non_zero_data_r = {CHUNK_SIZE{8'h00}};
+logic [CHUNK_SIZE-1:0] ifm_sram_sparse_map_r ;
 logic [BUS_SIZE-1:0][7:0] ifm_non_zero_data_r;
 logic [BUS_SIZE-1:0] ifm_sparse_map_r ;
 logic ifm_wr_valid_i_r;
-logic [CHUNK_SIZE-1:0][7:0] mem_filter_non_zero_data_r = {CHUNK_SIZE{8'h00}};
-logic [CHUNK_SIZE-1:0] mem_filter_sparse_map_r ;
-logic [BUS_SIZE-1:0][7:0] filter_non_zero_data_r;
-logic [BUS_SIZE-1:0] filter_sparse_map_r ;
-logic filter_wr_valid_i_r;
+logic [CHUNK_SIZE-1:0][7:0] fil_sram_non_zero_data_r = {CHUNK_SIZE{8'h00}};
+logic [CHUNK_SIZE-1:0] fil_sram_sparse_map_r ;
+logic [BUS_SIZE-1:0][7:0] fil_non_zero_data_r;
+logic [BUS_SIZE-1:0] fil_sparse_map_r ;
+logic fil_wr_valid_i_r;
 
 logic [$clog2(OUTPUT_BUF_NUM)-1:0] acc_buf_sel_r;
 logic [$clog2(OUTPUT_BUF_NUM)-1:0] out_buf_sel_r;
@@ -91,10 +91,10 @@ Compute_Unit_Top #(
 	,.ifm_nonzero_data_i(ifm_non_zero_data_r)
 	,.ifm_chunk_wr_valid_i(ifm_wr_valid_i_r)	
 	,.ifm_wr_ready_o
-	,.filter_sparsemap_i(filter_sparse_map_r)
-	,.filter_nonzero_data_i(filter_non_zero_data_r)
-	,.filter_chunk_wr_valid_i(filter_wr_valid_i_r)	
-	,.filter_wr_ready_o
+	,.fil_sparsemap_i(fil_sparse_map_r)
+	,.fil_nonzero_data_i(fil_non_zero_data_r)
+	,.fil_chunk_wr_valid_i(fil_wr_valid_i_r)	
+	,.fil_wr_ready_o
 
 	,.sub_chunk_end_o
 
@@ -117,12 +117,12 @@ task ifm_mem_gen();
 		data = $urandom_range(256,0);
 
 		if (data > 10*low_bound) begin
-			mem_ifm_non_zero_data_r[j] = data;
-			mem_ifm_sparse_map_r[i] = 1;
+			ifm_sram_non_zero_data_r[j] = data;
+			ifm_sram_sparse_map_r[i] = 1;
 			j = j+1;
 		end
 		else begin
-			mem_ifm_sparse_map_r[i] = 0;
+			ifm_sram_sparse_map_r[i] = 0;
 		end
 	end
 	#1;
@@ -143,10 +143,10 @@ task ifm_input_gen();
 
 endtask
 
-		assign ifm_sparse_map_r = mem_ifm_sparse_map_r[BUS_SIZE*k +: BUS_SIZE];
-		assign ifm_non_zero_data_r = mem_ifm_non_zero_data_r[BUS_SIZE*k +: BUS_SIZE];
+		assign ifm_sparse_map_r = ifm_sram_sparse_map_r[BUS_SIZE*k +: BUS_SIZE];
+		assign ifm_non_zero_data_r = ifm_sram_non_zero_data_r[BUS_SIZE*k +: BUS_SIZE];
 
-task filter_mem_gen();
+task fil_mem_gen();
 	integer i;
 	logic [$clog2(CHUNK_SIZE):0] j=0;
 	logic [7:0] data;
@@ -155,24 +155,24 @@ task filter_mem_gen();
 		data = $urandom_range(256,0);
 
 		if (data > 50) begin
-			mem_filter_non_zero_data_r[j] = data;
-			mem_filter_sparse_map_r[i] = 1;
+			fil_sram_non_zero_data_r[j] = data;
+			fil_sram_sparse_map_r[i] = 1;
 			j = j+1;
 		end
 		else begin
-			mem_filter_sparse_map_r[i] = 0;
+			fil_sram_sparse_map_r[i] = 0;
 		end
 	end
 	#1;
-	filter_wr_valid_i_r = 1'b1;
+	fil_wr_valid_i_r = 1'b1;
 endtask
 
 integer n=0;
 
-task filter_input_gen();
-	filter_mem_gen();
+task fil_input_gen();
+	fil_mem_gen();
 
-	repeat(DATA_IN_CYCLE_NUM) @(posedge (filter_wr_valid_i_r && filter_wr_ready_o && CLK && !RESET)) begin
+	repeat(DATA_IN_CYCLE_NUM) @(posedge (fil_wr_valid_i_r && fil_wr_ready_o && CLK && !RESET)) begin
 		#1;
 		n = n+1;
 	end
@@ -180,11 +180,11 @@ task filter_input_gen();
 
 endtask
 
-		assign filter_sparse_map_r = mem_filter_sparse_map_r[BUS_SIZE*n +: BUS_SIZE];
-		assign filter_non_zero_data_r = mem_filter_non_zero_data_r[BUS_SIZE*n +: BUS_SIZE];
+		assign fil_sparse_map_r = fil_sram_sparse_map_r[BUS_SIZE*n +: BUS_SIZE];
+		assign fil_non_zero_data_r = fil_sram_non_zero_data_r[BUS_SIZE*n +: BUS_SIZE];
 
 initial begin
-	filter_input_gen();
+	fil_input_gen();
 end
 
 initial begin

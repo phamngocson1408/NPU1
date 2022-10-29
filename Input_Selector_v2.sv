@@ -38,12 +38,12 @@ module Input_Selector_v2 #(
 	,input ifm_chunk_rd_sel_i
 `endif
 
-	,input [`BUS_SIZE-1:0] filter_sparsemap_i
-	,input [`BUS_SIZE-1:0][7:0] filter_nonzero_data_i
-	,input filter_chunk_wr_valid_i
-	,input [$clog2(`WR_DAT_CYC_NUM)-1:0] filter_chunk_wr_count_i
-	,input filter_chunk_wr_sel_i
-	,input filter_chunk_rd_sel_i
+	,input [`BUS_SIZE-1:0] fil_sparsemap_i
+	,input [`BUS_SIZE-1:0][7:0] fil_nonzero_data_i
+	,input fil_chunk_wr_valid_i
+	,input [$clog2(`WR_DAT_CYC_NUM)-1:0] fil_chunk_wr_count_i
+	,input fil_chunk_wr_sel_i
+	,input fil_chunk_rd_sel_i
 
 	,input run_valid_i
 	,input sub_chunk_start_i
@@ -54,21 +54,21 @@ module Input_Selector_v2 #(
 	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_ifm_sparsemap_first_i
 	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_ifm_sparsemap_next_i
 	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_fil_sparsemap_first_i
-	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_fil_sparsemap_last_i
 	,input [$clog2(`LAYER_FILTER_SIZE_MAX)-1:0] rd_fil_nonzero_dat_first_i
 `endif
+	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_fil_sparsemap_last_i
 
 `ifndef COMB_DAT_CHUNK
 	,output logic [7:0] ifm_data_o
 `endif
-	,output [7:0] filter_data_o
+	,output [7:0] fil_data_o
 	,output data_valid_o
 	,output sub_chunk_end_o
 );
 
 	logic [$clog2(`PREFIX_SUM_SIZE)-1:0] pri_enc_match_addr_w;
 	logic pri_enc_last_w;
-	logic [`PREFIX_SUM_SIZE-1:0] filter_sparsemap_w;
+	logic [`PREFIX_SUM_SIZE-1:0] fil_sparsemap_w;
 	logic [`PREFIX_SUM_SIZE-1:0] ifm_sparsemap_w;
 
 	logic [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_ifm_sparsemap_addr_r, rd_ifm_sparsemap_addr_w;
@@ -117,24 +117,24 @@ module Input_Selector_v2 #(
 	);
 `endif
 
-	Data_Chunk_Top_Filter u_Data_Chunk_Top_filter (
+	Data_Chunk_Top_Filter u_Data_Chunk_Top_fil (
 		 .clk_i
 		,.rst_i
-		,.wr_sparsemap_i(filter_sparsemap_i)
-		,.wr_nonzero_data_i(filter_nonzero_data_i)
-		,.wr_valid_i(filter_chunk_wr_valid_i)
-		,.wr_count_i(filter_chunk_wr_count_i)
-		,.wr_sel_i(filter_chunk_wr_sel_i)
+		,.wr_sparsemap_i(fil_sparsemap_i)
+		,.wr_nonzero_data_i(fil_nonzero_data_i)
+		,.wr_valid_i(fil_chunk_wr_valid_i)
+		,.wr_count_i(fil_chunk_wr_count_i)
+		,.wr_sel_i(fil_chunk_wr_sel_i)
 
-		,.rd_sel_i(filter_chunk_rd_sel_i)
-		,.rd_data_o(filter_data_o)
+		,.rd_sel_i(fil_chunk_rd_sel_i)
+		,.rd_data_o(fil_data_o)
 
 		,.pri_enc_match_addr_i(pri_enc_match_addr_w)
 		,.pri_enc_end_i(pri_enc_last_w)
 		,.sub_chunk_start_i
 
 		,.rd_sparsemap_addr_i(rd_fil_sparsemap_addr_w)
-		,.rd_sparsemap_o(filter_sparsemap_w)
+		,.rd_sparsemap_o(fil_sparsemap_w)
 
 `ifdef CHANNEL_STACKING
 		,.rd_fil_nonzero_dat_first_i
@@ -154,7 +154,7 @@ module Input_Selector_v2 #(
 `else
 		,.in1_i(ifm_sparsemap_w)
 `endif
-		,.in2_i(filter_sparsemap_w)
+		,.in2_i(fil_sparsemap_w)
 		
 		,.valid_o(data_valid_o)
 		,.match_addr_o(pri_enc_match_addr_w)

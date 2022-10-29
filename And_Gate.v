@@ -22,10 +22,10 @@
 
 module And_Gate (
 	 input  [`PREFIX_SUM_SIZE-1:0] IFM_i
-	,input  [`PREFIX_SUM_SIZE-1:0] filter_i
+	,input  [`PREFIX_SUM_SIZE-1:0] fil_i
 	,output [`PREFIX_SUM_SIZE-1:0] out_o 
 );
 
-assign out_o = IFM_i & filter_i;
+assign out_o = IFM_i & fil_i;
 
 endmodule

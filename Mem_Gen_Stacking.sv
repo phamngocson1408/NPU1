@@ -28,22 +28,22 @@ module Mem_Gen_Stacking #(
 	,input mem_gen_start_i
 	,output logic mem_gen_finish_o
 
-	,output logic [`BUS_SIZE-1:0] 			mem_ifm_wr_sparsemap_o
-	,output logic [`BUS_SIZE*8-1:0] 		mem_ifm_wr_nonzero_data_o
-	,output logic 					mem_ifm_wr_valid_o
-	,output logic [$clog2(`WR_DAT_CYC_NUM)-1:0] 	mem_ifm_wr_dat_count_o
-	,output logic [$clog2(`SRAM_IFM_NUM)-1:0] 	mem_ifm_wr_chunk_count_o
+	,output logic [`BUS_SIZE-1:0] 			ifm_sram_wr_sparsemap_o
+	,output logic [`BUS_SIZE*8-1:0] 		ifm_sram_wr_nonzero_data_o
+	,output logic 					ifm_sram_wr_valid_o
+	,output logic [$clog2(`WR_DAT_CYC_NUM)-1:0] 	ifm_sram_wr_dat_count_o
+	,output logic [$clog2(`SRAM_IFM_NUM)-1:0] 	ifm_sram_wr_chunk_count_o
 
-	,output logic [`BUS_SIZE-1:0] 			mem_filter_wr_sparsemap_o
-	,output logic [`BUS_SIZE*8-1:0] 		mem_filter_wr_nonzero_data_o
-	,output logic 					mem_filter_wr_valid_o
-	,output logic [$clog2(`WR_DAT_CYC_NUM)-1:0] 	mem_filter_wr_dat_count_o
-	,output logic [$clog2(`SRAM_FILTER_NUM)-1:0] 	mem_filter_wr_chunk_count_o
+	,output logic [`BUS_SIZE-1:0] 			fil_sram_wr_sparsemap_o
+	,output logic [`BUS_SIZE*8-1:0] 		fil_sram_wr_nonzero_data_o
+	,output logic 					fil_sram_wr_valid_o
+	,output logic [$clog2(`WR_DAT_CYC_NUM)-1:0] 	fil_sram_wr_dat_count_o
+	,output logic [$clog2(`SRAM_FILTER_NUM)-1:0] 	fil_sram_wr_chunk_count_o
 );
 
 // Gennerate IFM
-logic [`SIM_CHUNK_SIZE-1:0][`DAT_SIZE-1:0] mem_ifm_non_zero_data_r = {`SIM_CHUNK_SIZE{`DAT_SIZE{1'b0}}};
-logic [`SIM_CHUNK_SIZE-1:0] mem_ifm_sparse_map_r;
+logic [`SIM_CHUNK_SIZE-1:0][`DAT_SIZE-1:0] ifm_sram_non_zero_data_r = {`SIM_CHUNK_SIZE{`DAT_SIZE{1'b0}}};
+logic [`SIM_CHUNK_SIZE-1:0] ifm_sram_sparse_map_r;
 
 task automatic gen_ifm_buf(int chunk_dat_size_int);
 	int j=0;
@@ -61,21 +61,21 @@ task automatic gen_ifm_buf(int chunk_dat_size_int);
  		end
 
 		if (valid_dat <= `FILTER_DENSE_RATE) begin
-			mem_ifm_non_zero_data_r[j] = data;
-			mem_ifm_sparse_map_r[i] = 1;
+			ifm_sram_non_zero_data_r[j] = data;
+			ifm_sram_sparse_map_r[i] = 1;
 			j = j+1;
 		end
 		else begin
-			mem_ifm_sparse_map_r[i] = 0;
+			ifm_sram_sparse_map_r[i] = 0;
 		end
 	end
 endtask
 
 //Generate Filer
-logic [`SIM_CHUNK_SIZE-1:0][`DAT_SIZE-1:0] mem_filter_non_zero_data_r = {`SIM_CHUNK_SIZE{`DAT_SIZE{1'b0}}};
-logic [`SIM_CHUNK_SIZE-1:0] mem_filter_sparse_map_r;
+logic [`SIM_CHUNK_SIZE-1:0][`DAT_SIZE-1:0] fil_sram_non_zero_data_r = {`SIM_CHUNK_SIZE{`DAT_SIZE{1'b0}}};
+logic [`SIM_CHUNK_SIZE-1:0] fil_sram_sparse_map_r;
 
-task automatic gen_filter_buf(int chunk_dat_size_int);
+task automatic gen_fil_buf(int chunk_dat_size_int);
 	int j=0;
 	int data;
 	int valid_dat;
@@ -91,12 +91,12 @@ task automatic gen_filter_buf(int chunk_dat_size_int);
  		end
 
 		if (valid_dat <= `FILTER_DENSE_RATE) begin
-			mem_filter_non_zero_data_r[j] = data;
-			mem_filter_sparse_map_r[i] = 1;
+			fil_sram_non_zero_data_r[j] = data;
+			fil_sram_sparse_map_r[i] = 1;
 			j = j+1;
 		end
 		else begin
-			mem_filter_sparse_map_r[i] = 0;
+			fil_sram_sparse_map_r[i] = 0;
 		end
 	end
 endtask
@@ -107,11 +107,11 @@ int ifm_loop_y_num_int = `LAYER_FILTER_SIZE_X + `LAYER_OUTPUT_SIZE_X - 1;
 initial begin
 	@(posedge mem_gen_start_i) #1;	
 	fork
-		// Gen filter
+		// Gen fil
 		begin
 			automatic int chunk_dat_size_int = 0;
 			automatic int channel_remain_int = 0;
-			mem_filter_wr_valid_o = 1'b1;
+			fil_sram_wr_valid_o = 1'b1;
 			for (int i=0; i<loop_z_num_int; i=i+1) begin
 				if (i == loop_z_num_int - 1) begin
 					channel_remain_int = `LAYER_CHANNEL_NUM - (`DIVIDED_CHANNEL_NUM * i);
@@ -121,24 +121,24 @@ initial begin
 					chunk_dat_size_int = `LAYER_FILTER_SIZE_X * `LAYER_FILTER_SIZE_Y * `DIVIDED_CHANNEL_NUM;
 				end
 
-				mem_filter_wr_chunk_count_o = i;
-				gen_filter_buf(chunk_dat_size_int);
-				mem_filter_wr_dat_count_o = 0;
+				fil_sram_wr_chunk_count_o = i;
+				gen_fil_buf(chunk_dat_size_int);
+				fil_sram_wr_dat_count_o = 0;
 				repeat(`SIM_WR_DAT_CYC_NUM) begin
-					mem_filter_wr_sparsemap_o = mem_filter_sparse_map_r[`BUS_SIZE*mem_filter_wr_dat_count_o +: `BUS_SIZE];
-					mem_filter_wr_nonzero_data_o = mem_filter_non_zero_data_r[`BUS_SIZE*mem_filter_wr_dat_count_o +: `BUS_SIZE];
+					fil_sram_wr_sparsemap_o = fil_sram_sparse_map_r[`BUS_SIZE*fil_sram_wr_dat_count_o +: `BUS_SIZE];
+					fil_sram_wr_nonzero_data_o = fil_sram_non_zero_data_r[`BUS_SIZE*fil_sram_wr_dat_count_o +: `BUS_SIZE];
 					@(posedge clk_i) #1;
-					mem_filter_wr_dat_count_o = mem_filter_wr_dat_count_o + 1;
+					fil_sram_wr_dat_count_o = fil_sram_wr_dat_count_o + 1;
 				end
 			end
-			mem_filter_wr_valid_o = 1'b0;
+			fil_sram_wr_valid_o = 1'b0;
 		end
 
 		// Gen ifm
 		begin
 			automatic int chunk_dat_size_int = 0;
 			automatic int channel_remain_int = 0;
-			mem_ifm_wr_valid_o = 1'b1;
+			ifm_sram_wr_valid_o = 1'b1;
 			for (int i=0; i<loop_z_num_int; i=i+1) begin
 				if (i == loop_z_num_int - 1) begin
 					channel_remain_int = `LAYER_CHANNEL_NUM - (`DIVIDED_CHANNEL_NUM * i);
@@ -149,19 +149,19 @@ initial begin
 				end
 
 				for (int j=0; j<ifm_loop_y_num_int; j=j+1) begin
-					mem_ifm_wr_chunk_count_o = i * ifm_loop_y_num_int + j;
+					ifm_sram_wr_chunk_count_o = i * ifm_loop_y_num_int + j;
 					gen_ifm_buf(chunk_dat_size_int);
-					mem_ifm_wr_dat_count_o = 0;
+					ifm_sram_wr_dat_count_o = 0;
 					repeat(`SIM_WR_DAT_CYC_NUM) begin
-						mem_ifm_wr_sparsemap_o = mem_ifm_sparse_map_r[`BUS_SIZE*mem_ifm_wr_dat_count_o +: `BUS_SIZE];
-						mem_ifm_wr_nonzero_data_o = mem_ifm_non_zero_data_r[`BUS_SIZE*mem_ifm_wr_dat_count_o +: `BUS_SIZE];
+						ifm_sram_wr_sparsemap_o = ifm_sram_sparse_map_r[`BUS_SIZE*ifm_sram_wr_dat_count_o +: `BUS_SIZE];
+						ifm_sram_wr_nonzero_data_o = ifm_sram_non_zero_data_r[`BUS_SIZE*ifm_sram_wr_dat_count_o +: `BUS_SIZE];
 						@(posedge clk_i) #1;
-						mem_ifm_wr_dat_count_o = mem_ifm_wr_dat_count_o + 1;
+						ifm_sram_wr_dat_count_o = ifm_sram_wr_dat_count_o + 1;
 					end
 				end
 
 			end
-			mem_ifm_wr_valid_o = 1'b0;
+			ifm_sram_wr_valid_o = 1'b0;
 		end
 	join
 

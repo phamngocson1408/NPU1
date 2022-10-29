@@ -39,12 +39,12 @@ module Compute_Unit #(
 	,input ifm_chunk_rd_sel_i
 `endif
 
-	,input [`BUS_SIZE-1:0] filter_sparsemap_i
-	,input [`BUS_SIZE-1:0][7:0] filter_nonzero_data_i
-	,input filter_chunk_wr_valid_i
-	,input [$clog2(`WR_DAT_CYC_NUM)-1:0] filter_chunk_wr_count_i
-	,input filter_chunk_wr_sel_i
-	,input filter_chunk_rd_sel_i
+	,input [`BUS_SIZE-1:0] fil_sparsemap_i
+	,input [`BUS_SIZE-1:0][7:0] fil_nonzero_data_i
+	,input fil_chunk_wr_valid_i
+	,input [$clog2(`WR_DAT_CYC_NUM)-1:0] fil_chunk_wr_count_i
+	,input fil_chunk_wr_sel_i
+	,input fil_chunk_rd_sel_i
 
 	,input run_valid_i
 	,input sub_chunk_start_i
@@ -55,9 +55,9 @@ module Compute_Unit #(
 	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_ifm_sparsemap_first_i
 	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_ifm_sparsemap_next_i
 	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_fil_sparsemap_first_i
-	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_fil_sparsemap_last_i
 	,input [$clog2(`LAYER_FILTER_SIZE_MAX)-1:0] rd_fil_nonzero_dat_first_i
 `endif
+	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_fil_sparsemap_last_i
 
 	,output sub_chunk_end_o
 
@@ -69,7 +69,7 @@ module Compute_Unit #(
 `ifndef COMB_DAT_CHUNK
 	logic [7:0] ifm_data_w;
 `endif
-	logic [7:0] filter_data_w;
+	logic [7:0] fil_data_w;
 	logic data_valid_w;
 
 	Input_Selector_v2 u_Input_Selector (
@@ -89,12 +89,12 @@ module Compute_Unit #(
 		,.ifm_chunk_rd_sel_i
 `endif
 		
-		,.filter_sparsemap_i
-		,.filter_nonzero_data_i
-		,.filter_chunk_wr_valid_i
-		,.filter_chunk_wr_count_i
-		,.filter_chunk_wr_sel_i
-		,.filter_chunk_rd_sel_i
+		,.fil_sparsemap_i
+		,.fil_nonzero_data_i
+		,.fil_chunk_wr_valid_i
+		,.fil_chunk_wr_count_i
+		,.fil_chunk_wr_sel_i
+		,.fil_chunk_rd_sel_i
 		
 		,.run_valid_i
 		,.sub_chunk_start_i
@@ -105,14 +105,14 @@ module Compute_Unit #(
 		,.rd_ifm_sparsemap_first_i
 		,.rd_ifm_sparsemap_next_i
 		,.rd_fil_sparsemap_first_i
-		,.rd_fil_sparsemap_last_i
 		,.rd_fil_nonzero_dat_first_i
 `endif
+		,.rd_fil_sparsemap_last_i
 		
 `ifndef COMB_DAT_CHUNK
 		,.ifm_data_o(ifm_data_w)
 `endif
-		,.filter_data_o(filter_data_w)
+		,.fil_data_o(fil_data_w)
 		,.data_valid_o(data_valid_w)
 		,.sub_chunk_end_o
 	);
@@ -126,7 +126,7 @@ module Compute_Unit #(
 `else
 		,.in1_i(ifm_data_w)
 `endif
-		,.in2_i(filter_data_w)
+		,.in2_i(fil_data_w)
 		,.valid_i(data_valid_w)
 		
 		,.acc_dat_i	

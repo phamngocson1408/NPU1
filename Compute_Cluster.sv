@@ -32,13 +32,13 @@ module Compute_Cluster #(
 	,input ifm_chunk_wr_sel_i
 	,input ifm_chunk_rd_sel_i
 
-	,input [`BUS_SIZE-1:0] filter_sparsemap_i
-	,input [`BUS_SIZE*8-1:0] filter_nonzero_data_i
-	,input filter_chunk_wr_valid_i
-	,input [$clog2(`WR_DAT_CYC_NUM)-1:0] filter_chunk_wr_count_i
-	,input filter_chunk_wr_sel_i
-	,input filter_chunk_rd_sel_i
-	,input [`COMPUTE_UNIT_NUM-1:0] filter_chunk_cu_wr_sel_i
+	,input [`BUS_SIZE-1:0] fil_sparsemap_i
+	,input [`BUS_SIZE*8-1:0] fil_nonzero_data_i
+	,input fil_chunk_wr_valid_i
+	,input [$clog2(`WR_DAT_CYC_NUM)-1:0] fil_chunk_wr_count_i
+	,input fil_chunk_wr_sel_i
+	,input fil_chunk_rd_sel_i
+	,input [`COMPUTE_UNIT_NUM-1:0] fil_chunk_cu_wr_sel_i
 
 	,input run_valid_i
 	,input total_chunk_start_i
@@ -48,9 +48,10 @@ module Compute_Cluster #(
 	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_ifm_sparsemap_first_i
 	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_ifm_sparsemap_next_i
 	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_fil_sparsemap_first_i
-	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_fil_sparsemap_last_i
 	,input [$clog2(`LAYER_FILTER_SIZE_MAX)-1:0] rd_fil_nonzero_dat_first_i
 `endif
+	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_fil_sparsemap_last_i
+
 	,output total_chunk_end_o
 
 	,input [$clog2(`OUTPUT_BUF_NUM)-1:0] acc_buf_sel_i
@@ -60,7 +61,7 @@ module Compute_Cluster #(
 	,output [`OUTPUT_BUF_SIZE-1:0] out_buf_dat_o
 );
 
-	logic [`COMPUTE_UNIT_NUM-1:0] filter_wr_valid_w;
+	logic [`COMPUTE_UNIT_NUM-1:0] fil_wr_valid_w;
 	logic [`COMPUTE_UNIT_NUM-1:0] chunk_end_w;
 	logic [`COMPUTE_UNIT_NUM-1:0][`OUTPUT_BUF_SIZE-1:0] out_buf_dat_w;
 
@@ -94,12 +95,12 @@ module Compute_Cluster #(
 			,.ifm_chunk_wr_sel_i
 			,.ifm_chunk_rd_sel_i
 `endif
-			,.filter_sparsemap_i
-			,.filter_nonzero_data_i
-			,.filter_chunk_wr_valid_i(filter_wr_valid_w[i])
-			,.filter_chunk_wr_count_i
-			,.filter_chunk_wr_sel_i
-			,.filter_chunk_rd_sel_i
+			,.fil_sparsemap_i
+			,.fil_nonzero_data_i
+			,.fil_chunk_wr_valid_i(fil_wr_valid_w[i])
+			,.fil_chunk_wr_count_i
+			,.fil_chunk_wr_sel_i
+			,.fil_chunk_rd_sel_i
 
 			,.run_valid_i
 			,.sub_chunk_start_i(total_chunk_start_i)
@@ -109,9 +110,9 @@ module Compute_Cluster #(
 			,.rd_ifm_sparsemap_first_i
 			,.rd_ifm_sparsemap_next_i
 			,.rd_fil_sparsemap_first_i
-			,.rd_fil_sparsemap_last_i
 			,.rd_fil_nonzero_dat_first_i
 `endif
+			,.rd_fil_sparsemap_last_i
 			,.sub_chunk_end_o(chunk_end_w[i])
 
 			,.acc_buf_sel_i
@@ -122,7 +123,7 @@ module Compute_Cluster #(
 	end
 
 	for (i=0; i<`COMPUTE_UNIT_NUM; i=i+1) begin
-		assign filter_wr_valid_w[i] = filter_chunk_cu_wr_sel_i[i] ? filter_chunk_wr_valid_i : 0;
+		assign fil_wr_valid_w[i] = fil_chunk_cu_wr_sel_i[i] ? fil_chunk_wr_valid_i : 0;
 	end
 
 	assign total_chunk_end_o = &chunk_end_w;

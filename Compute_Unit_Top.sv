@@ -39,12 +39,12 @@ module Compute_Unit_Top #(
         ,input ifm_chunk_rd_sel_i	
 `endif
 
-	,input [`BUS_SIZE-1:0] filter_sparsemap_i
-	,input [`BUS_SIZE-1:0][7:0] filter_nonzero_data_i
-	,input filter_chunk_wr_valid_i
-	,input [$clog2(`WR_DAT_CYC_NUM)-1:0] filter_chunk_wr_count_i
-	,input filter_chunk_wr_sel_i
-	,input filter_chunk_rd_sel_i
+	,input [`BUS_SIZE-1:0] fil_sparsemap_i
+	,input [`BUS_SIZE-1:0][7:0] fil_nonzero_data_i
+	,input fil_chunk_wr_valid_i
+	,input [$clog2(`WR_DAT_CYC_NUM)-1:0] fil_chunk_wr_count_i
+	,input fil_chunk_wr_sel_i
+	,input fil_chunk_rd_sel_i
 
 	,input run_valid_i
 	,input sub_chunk_start_i
@@ -54,9 +54,9 @@ module Compute_Unit_Top #(
 	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_ifm_sparsemap_first_i
 	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_ifm_sparsemap_next_i
 	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_fil_sparsemap_first_i
-	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_fil_sparsemap_last_i
 	,input [$clog2(`LAYER_FILTER_SIZE_MAX)-1:0] rd_fil_nonzero_dat_first_i
 `endif
+	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_fil_sparsemap_last_i
 
 	,output sub_chunk_end_o
 
@@ -88,12 +88,12 @@ module Compute_Unit_Top #(
 		,.ifm_chunk_rd_sel_i
 `endif
 		
-		,.filter_sparsemap_i
-		,.filter_nonzero_data_i
-		,.filter_chunk_wr_valid_i
-		,.filter_chunk_wr_count_i
-		,.filter_chunk_wr_sel_i
-		,.filter_chunk_rd_sel_i
+		,.fil_sparsemap_i
+		,.fil_nonzero_data_i
+		,.fil_chunk_wr_valid_i
+		,.fil_chunk_wr_count_i
+		,.fil_chunk_wr_sel_i
+		,.fil_chunk_rd_sel_i
 		
 		,.run_valid_i
 		,.sub_chunk_start_i
@@ -104,9 +104,9 @@ module Compute_Unit_Top #(
 		,.rd_ifm_sparsemap_first_i
 		,.rd_ifm_sparsemap_next_i
 		,.rd_fil_sparsemap_first_i
-		,.rd_fil_sparsemap_last_i
 		,.rd_fil_nonzero_dat_first_i
 `endif
+		,.rd_fil_sparsemap_last_i
 
 		,.sub_chunk_end_o
 		
