@@ -21,7 +21,6 @@
 
 
 module Dat_Chunk_Comb #(
-//	localparam int `WR_DAT_CYC_NUM = `CHUNK_SIZE/`BUS_SIZE
 )(
 	 input rst_i
 	,input clk_i

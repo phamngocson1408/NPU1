@@ -10,7 +10,7 @@
 `define RUN_TIME		10
 
 `ifdef CHANNEL_STACKING
-	`define CHUNK_SIZE	200	//Bytes
+	`define CHUNK_SIZE	128*2	//Bytes
 `elsif CHANNEL_PADDING
 	`define CHUNK_SIZE	128	//Bytes
 `endif
@@ -47,7 +47,7 @@
 `endif
 
 `define SIM_WR_DAT_CYC_NUM	`SIM_CHUNK_SIZE/`BUS_SIZE
-`define SIM_RD_SPARSEMAP_NUM	`SIM_CHUNK_SIZE/`PREFIX_SUM_SIZE
+`define SIM_RD_DAT_CYC_NUM	`SIM_CHUNK_SIZE/`PREFIX_SUM_SIZE
 
 
 `ifdef SHORT_CHANNEL

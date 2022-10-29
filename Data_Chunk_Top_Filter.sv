@@ -20,7 +20,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module Data_Chunk_Top #(
+module Data_Chunk_Top_Filter #(
 )(
 	 input rst_i
 	,input clk_i
@@ -41,7 +41,8 @@ module Data_Chunk_Top #(
 	,output logic [`PREFIX_SUM_SIZE-1:0] rd_sparsemap_o
 
 `ifdef CHANNEL_STACKING
-	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_fil_sparsemap_first_i
+	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_fil_nonzero_dat_first_i
+	,input sub_chunk_end_i
 `endif
 
 );
@@ -64,10 +65,6 @@ module Data_Chunk_Top #(
 
 		,.rd_sparsemap_addr_i
 		,.rd_sparsemap_o(rd_sparsemap_w[0])
-
-`ifdef CHANNEL_STACKING
-		,.rd_fil_sparsemap_first_i
-`endif
 	);
 
 	Data_Chunk u_Data_Chunk_1 (
@@ -83,10 +80,6 @@ module Data_Chunk_Top #(
 
 		,.rd_sparsemap_addr_i
 		,.rd_sparsemap_o(rd_sparsemap_w[1])
-
-`ifdef CHANNEL_STACKING
-		,.rd_fil_sparsemap_first_i
-`endif
 	);
 
 	Data_Addr_Cal u_Data_Addr_Cal (
@@ -99,6 +92,10 @@ module Data_Chunk_Top #(
 		,.sparsemap_i(rd_sparsemap_o)
 
 		,.rd_dat_addr_o(rd_dat_addr_w)
+`ifdef CHANNEL_STACKING
+		,.rd_fil_nonzero_dat_first_i
+		,.sub_chunk_end_i
+`endif
 	);
 
 

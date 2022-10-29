@@ -21,7 +21,6 @@
 
 
 module IFM_Input_Sel #(
-//	 localparam int `RD_DAT_CYC_NUM = `CHUNK_SIZE/`PREFIX_SUM_SIZE
 )(
 	 input rst_i
 	,input clk_i

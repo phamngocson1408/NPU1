@@ -21,12 +21,6 @@
 
 
 module Mem_Filter #(
-//	 localparam int SRAM_CHUNK_SIZE = `CHUNK_SIZE
-// 	,localparam int SRAM_IFM_SHIFT_NUM = SRAM_CHUNK_SIZE / `DIVIDED_CHANNEL_NUM
-//	,localparam int SRAM_OUTPUT_NUM = (SRAM_IFM_SHIFT_NUM <= `OUTPUT_BUF_NUM) ? SRAM_IFM_SHIFT_NUM : `OUTPUT_BUF_NUM
-// 	,localparam int SRAM_IFM_NUM = SRAM_IFM_SHIFT_NUM + SRAM_OUTPUT_NUM
-// 	,localparam int SRAM_FILTER_NUM = SRAM_IFM_SHIFT_NUM * `COMPUTE_UNIT_NUM
-//	localparam int `WR_DAT_CYC_NUM = `CHUNK_SIZE/`BUS_SIZE
 )(
 	 input rst_i
 	,input clk_i
