@@ -152,6 +152,8 @@ logic ifm_wr_last_w;
 
 logic [31:0] total_ifm_dat_rd_num_r = 0;
 logic [31:0] total_fil_dat_rd_num_r = 0;
+logic [31:0] total_dat_rd_num_r;
+assign total_dat_rd_num_r = total_ifm_dat_rd_num_r + total_fil_dat_rd_num_r;
 
 task wr_ifm_chunk(int ifm_sram_rd_count_int);
 	ifm_chunk_wr_valid_i = 1;
@@ -187,7 +189,7 @@ initial begin
 forever begin
 	@(posedge clk_i);
 	if (total_chunk_end_o) begin
-		#1;
+	//	#1;
 		-> sub_chunk_end_event;
 	end
 end
@@ -195,7 +197,6 @@ end
 
 // Initiate
 `ifdef CHANNEL_STACKING
-initial begin
 	int loop_z_num = (`LAYER_CHANNEL_NUM % `DIVIDED_CHANNEL_NUM) ? (`LAYER_CHANNEL_NUM / `DIVIDED_CHANNEL_NUM) + 1 
 									 : (`LAYER_CHANNEL_NUM / `DIVIDED_CHANNEL_NUM);
 	int ifm_loop_y_num = `LAYER_FILTER_SIZE_X + `LAYER_OUTPUT_SIZE_X - 1;
@@ -203,6 +204,10 @@ initial begin
 	int fil_loop_y_idx_last = 1;
 	int fil_loop_y_idx_start = 1;
 
+	int ifm_chunk_start_idx = 0;
+	int ifm_chunk_remain = 0;
+
+initial begin
 	run_valid_i = 0;
 	ifm_chunk_wr_sel_i = 1;
 	ifm_chunk_rd_sel_i = 0;
@@ -239,46 +244,56 @@ initial begin
 	@(negedge clk_i) #1;
 	run_valid_i = 1'b1;
 
-	for (int loop_z_idx = 1; loop_z_idx <= loop_z_num; loop_z_idx += 1 ) begin
+	for (int loop_z_idx = 0; loop_z_idx < loop_z_num; loop_z_idx += 1 ) begin
 		fork
-			wr_fil_chunk(loop_z_idx);
+			wr_fil_chunk(loop_z_idx + 1);
 		join_none
-		for (int ifm_loop_y_idx = 1; ifm_loop_y_idx <= ifm_loop_y_num; ifm_loop_y_idx += 1) begin
+
+		if (loop_z_idx == loop_z_num-1)
+			ifm_chunk_remain = `LAYER_CHANNEL_NUM % `DIVIDED_CHANNEL_NUM;
+		else
+			ifm_chunk_remain = `DIVIDED_CHANNEL_NUM;
+
+		for (int ifm_loop_y_idx = 0; ifm_loop_y_idx < ifm_loop_y_num; ifm_loop_y_idx += 1) begin
 			fork
 				begin
-					int ifm_sram_rd_count_int =  (loop_z_idx - 1) * loop_z_num + ifm_loop_y_idx;
+					int ifm_sram_rd_count_int =  loop_z_idx * ifm_loop_y_num + ifm_loop_y_idx + 1;
 					wr_ifm_chunk(ifm_sram_rd_count_int);
 				end
 			join_none
 			if (ifm_loop_y_idx < `LAYER_FILTER_SIZE_X) begin
-				fil_loop_y_idx_start = 1;
+				fil_loop_y_idx_start = 0;
 				fil_loop_y_idx_last = ifm_loop_y_idx;
 			end
 			else if ((`LAYER_FILTER_SIZE_X <= ifm_loop_y_idx) && (ifm_loop_y_idx <= ifm_loop_y_num - `LAYER_FILTER_SIZE_X)) begin
-				fil_loop_y_idx_start = 1;
-				fil_loop_y_idx_last = `LAYER_FILTER_SIZE_X;
+				fil_loop_y_idx_start = 0;
+				fil_loop_y_idx_last = `LAYER_FILTER_SIZE_X-1;
 			end
 			else begin
-				fil_loop_y_idx_start = `LAYER_FILTER_SIZE_X - (ifm_loop_y_num - ifm_loop_y_idx);
-				fil_loop_y_idx_last = `LAYER_FILTER_SIZE_X;
+				fil_loop_y_idx_start = `LAYER_FILTER_SIZE_X - (ifm_loop_y_num - ifm_loop_y_idx) - 1;
+				fil_loop_y_idx_last = `LAYER_FILTER_SIZE_X - 1;
 			end
 			
 			for (int fil_loop_y_idx = fil_loop_y_idx_start; fil_loop_y_idx <= fil_loop_y_idx_last; fil_loop_y_idx += 1) begin
-				rd_fil_sparsemap_first_i = (fil_loop_y_idx - 1) * `LAYER_FILTER_SIZE_X;
+				rd_fil_sparsemap_first_i = fil_loop_y_idx * `LAYER_FILTER_SIZE_X;
 				rd_fil_sparsemap_last_i =  rd_fil_sparsemap_first_i + `LAYER_FILTER_SIZE_X - 1;
-				rd_fil_nonzero_dat_first_i = fil_loop_y_idx - 1;
+				rd_fil_nonzero_dat_first_i = fil_loop_y_idx;
 
-				for (int ifm_loop_x_idx = 1; ifm_loop_x_idx <= `LAYER_OUTPUT_SIZE_X; ifm_loop_x_idx += 1) begin
-					rd_ifm_sparsemap_first_i = ifm_loop_x_idx - 1;
+				ifm_chunk_start_idx = 0;
 
-					if (ifm_loop_x_idx == `LAYER_OUTPUT_SIZE_X)
+				for (int ifm_loop_x_idx = 0; ifm_loop_x_idx < `LAYER_OUTPUT_SIZE_X; ifm_loop_x_idx += 1) begin
+					rd_ifm_sparsemap_first_i = ifm_chunk_start_idx / `PREFIX_SUM_SIZE;
+					sparsemap_shift_left_i = ifm_chunk_start_idx % `PREFIX_SUM_SIZE;
+
+					if (ifm_loop_x_idx == `LAYER_OUTPUT_SIZE_X - 1)
 						rd_ifm_sparsemap_next_i = 0;
 					else
-						rd_ifm_sparsemap_next_i = rd_ifm_sparsemap_first_i + 1;
+						rd_ifm_sparsemap_next_i = ifm_chunk_remain - 1;
 
-					acc_buf_sel_i = (ifm_loop_y_idx - fil_loop_y_idx) * `LAYER_OUTPUT_SIZE_X + ifm_loop_x_idx - 1;
-				//	wait(sub_chunk_end_event.triggered);
+					acc_buf_sel_i = (ifm_loop_y_idx - fil_loop_y_idx) * `LAYER_OUTPUT_SIZE_X + ifm_loop_x_idx;
+
 					@sub_chunk_end_event;
+					ifm_chunk_start_idx += ifm_chunk_remain; 
 				end
 			end
 		end
@@ -338,7 +353,7 @@ initial begin
 				for (int ifm_y_idx = fil_y_idx; ifm_y_idx < `LAYER_OUTPUT_SIZE_Y + fil_y_idx; ifm_y_idx += 1) begin
 					for (int ifm_x_idx = fil_x_idx; ifm_x_idx < `LAYER_OUTPUT_SIZE_X + fil_x_idx; ifm_x_idx += 1) begin
 						fork begin
-							int ifm_sram_rd_count_int = (loop_z_idx * `LAYER_OUTPUT_SIZE_Y * `LAYER_OUTPUT_SIZE_X) + (ifm_y_idx * `LAYER_OUTPUT_SIZE_X) + fil_x_idx + 1;
+							int ifm_sram_rd_count_int = (loop_z_idx * `LAYER_OUTPUT_SIZE_Y * `LAYER_OUTPUT_SIZE_X) + (ifm_y_idx * `LAYER_OUTPUT_SIZE_X) + ifm_x_idx + 1;
 							wr_ifm_chunk(ifm_sram_rd_count_int);
 						end join_none
 
@@ -357,20 +372,20 @@ end
 //Generate the total chunk start signal
 logic run_valid_delay_r;
 logic total_chunk_start_r;
-always @(posedge clk_i) begin
+always_ff @(posedge clk_i) begin
 	if (rst_i)
-		run_valid_delay_r = #1 1'b0;
+		run_valid_delay_r <= 1'b0;
 	else
-		run_valid_delay_r = #1 run_valid_i;
+		run_valid_delay_r <=  run_valid_i;
 end
 
-always @(posedge clk_i) begin
+always_ff @(posedge clk_i) begin
 	if (rst_i)
-		total_chunk_start_r = #1 1'b0;
+		total_chunk_start_r <= 1'b0;
 	else if (total_chunk_end_o)
-		total_chunk_start_r = #1 1'b1;
+		total_chunk_start_r <= 1'b1;
 	else if (total_chunk_start_r)
-		total_chunk_start_r = #1 1'b0;
+		total_chunk_start_r <= 1'b0;
 end
 
 assign total_chunk_start_i = run_valid_i && (total_chunk_start_r || (run_valid_i && (!run_valid_delay_r)));

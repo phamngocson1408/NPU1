@@ -91,6 +91,7 @@ module Input_Selector_v2 #(
 
  `ifdef CHANNEL_STACKING
 		,.sparsemap_shift_left_i
+		,.rd_ifm_sparsemap_first_i
 		,.rd_ifm_sparsemap_next_i
 		,.rd_sparsemap_addr_i(rd_ifm_sparsemap_addr_w)
  `endif

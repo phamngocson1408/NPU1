@@ -130,29 +130,29 @@ module Compute_Cluster #(
 	assign out_buf_dat_o = out_buf_dat_w[com_unit_out_buf_sel_i];
 
 `ifdef COMB_DAT_CHUNK
-//  `ifdef CHANNEL_STACKING
-//  	IFM_Dat_Chunk_Comb_Stacking u_IFM_Dat_Chunk_Comb_Stacking (
-//  		 .rst_i
-//  		,.clk_i
-//  
-//  		,.wr_sparsemap_i(ifm_sparsemap_i)
-//  		,.wr_nonzero_data_i(ifm_nonzero_data_i)
-//  		,.wr_valid_i(ifm_chunk_wr_valid_i)
-//  		,.wr_count_i(ifm_chunk_wr_count_i)
-//  		,.wr_sel_i(ifm_chunk_wr_sel_i)
-//  		,.rd_sel_i(ifm_chunk_rd_sel_i)
-//  
-//  		,.sub_chunk_start_i(total_chunk_start_i)
-//  		,.sparsemap_shift_left_i
+  `ifdef CHANNEL_STACKING
+  	IFM_Dat_Chunk_Comb_Stacking u_IFM_Dat_Chunk_Comb_Stacking (
+  		 .rst_i
+  		,.clk_i
+  
+  		,.wr_sparsemap_i(ifm_sparsemap_i)
+  		,.wr_nonzero_data_i(ifm_nonzero_data_i)
+  		,.wr_valid_i(ifm_chunk_wr_valid_i)
+  		,.wr_count_i(ifm_chunk_wr_count_i)
+  		,.wr_sel_i(ifm_chunk_wr_sel_i)
+  		,.rd_sel_i(ifm_chunk_rd_sel_i)
+  
+//		,.sub_chunk_start_i(total_chunk_start_i)
+  		,.sparsemap_shift_left_i
 //  		,.pri_enc_last_i(pri_enc_last_w)
-//  
-//  		,.rd_addr_i(rd_addr_w)
-//  		,.rd_data_o(rd_data_w)
-//  
-//  		,.rd_sparsemap_addr_i(rd_sparsemap_addr_w)
-//  		,.rd_sparsemap_o(rd_sparsemap_w)	
-//  	);
-//  `elsif CHANNEL_PADDING
+  
+  		,.rd_addr_i(rd_addr_w)
+  		,.rd_data_o(rd_data_w)
+  
+  		,.rd_sparsemap_addr_i(rd_sparsemap_addr_w)
+  		,.rd_sparsemap_o(rd_sparsemap_w)	
+  	);
+  `elsif CHANNEL_PADDING
   	IFM_Dat_Chunk_Comb_Padding u_IFM_Dat_Chunk_Comb_Padding (
   		 .rst_i
   		,.clk_i
@@ -170,7 +170,7 @@ module Compute_Cluster #(
   		,.rd_sparsemap_addr_i(rd_sparsemap_addr_w)
   		,.rd_sparsemap_o(rd_sparsemap_w)	
   	);
-//  `endif
+  `endif
 `endif
 
 endmodule

@@ -34,6 +34,7 @@ module IFM_Input_Sel #(
 
 `ifdef CHANNEL_STACKING
 	,input [$clog2(`PREFIX_SUM_SIZE)-1:0] sparsemap_shift_left_i
+	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_ifm_sparsemap_first_i
 	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_ifm_sparsemap_next_i
 	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_sparsemap_addr_i
 `endif
@@ -50,11 +51,11 @@ module IFM_Input_Sel #(
 	);
 
 `ifdef CHANNEL_STACKING
-	logic [$clog2(`CHUNK_SIZE):0] rd_dat_base_addr_next_r;	
+	logic [$clog2(`CHUNK_SIZE):0] rd_dat_base_addr_next_r, rd_dat_base_addr_w;	
 	logic gated_clk_0_lat;
 	always_latch begin
 		if (!clk_i) begin
-			gated_clk_0_lat <= (rst_i || (rd_ifm_sparsemap_next_i == rd_sparsemap_addr_i) || (!rd_ifm_sparsemap_next_i));
+			gated_clk_0_lat <= (rst_i || (rd_ifm_sparsemap_first_i == rd_sparsemap_addr_i) || (!rd_ifm_sparsemap_next_i));
 		end
 	end
 	wire gated_clk_0_w = clk_i && gated_clk_0_lat;
@@ -65,8 +66,8 @@ module IFM_Input_Sel #(
 		else if (rd_ifm_sparsemap_next_i == 0) begin
 			rd_dat_base_addr_next_r <= {($clog2(`CHUNK_SIZE) + 1){1'b0}};
 		end
-		else if (rd_ifm_sparsemap_next_i == rd_sparsemap_addr_i) begin
-			rd_dat_base_addr_next_r <= rd_dat_base_addr_r;
+		else if (rd_ifm_sparsemap_first_i == rd_sparsemap_addr_i) begin
+			rd_dat_base_addr_next_r <= rd_dat_base_addr_w + prefix_sum_out_w[rd_ifm_sparsemap_next_i];
 		end
 	end
 
@@ -89,8 +90,9 @@ module IFM_Input_Sel #(
 		end
 	end
 
+	assign rd_dat_base_addr_w = sub_chunk_start_i ? rd_dat_base_addr_next_r : rd_dat_base_addr_r;
 	assign rd_dat_addr_temp_w = prefix_sum_out_w[pri_enc_match_addr_i];
-	assign rd_addr_o = (sub_chunk_start_i ? rd_dat_base_addr_next_r : rd_dat_base_addr_r) + rd_dat_addr_temp_w;
+	assign rd_addr_o = rd_dat_base_addr_w + rd_dat_addr_temp_w;
 `elsif CHANNEL_PADDING
 	logic gated_clk_lat;
 	always_latch begin

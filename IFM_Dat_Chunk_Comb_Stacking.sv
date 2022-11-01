@@ -34,9 +34,9 @@ module IFM_Dat_Chunk_Comb_Stacking #(
 	,input wr_sel_i
 	,input rd_sel_i
 
-	,input sub_chunk_start_i
+//	,input sub_chunk_start_i
 	,input [$clog2(`PREFIX_SUM_SIZE)-1:0] sparsemap_shift_left_i
-	,input [`COMPUTE_UNIT_NUM-1:0] pri_enc_last_i
+//	,input [`COMPUTE_UNIT_NUM-1:0] pri_enc_last_i
 
 	,input [`COMPUTE_UNIT_NUM-1:0][$clog2(`CHUNK_SIZE):0] rd_addr_i
 	,output logic [`COMPUTE_UNIT_NUM-1:0][7:0] rd_data_o
@@ -96,7 +96,7 @@ module IFM_Dat_Chunk_Comb_Stacking #(
 
 	always_comb begin
 		for (integer i=0; i<`COMPUTE_UNIT_NUM; i=i+1) begin
-			if (rd_sel_w[i])
+			if (rd_sel_i)
 				rd_sparsemap_o_comb_w[i] = rd_sparsemap_o_w[1][i];
 			else
 				rd_sparsemap_o_comb_w[i] = rd_sparsemap_o_w[0][i];
@@ -122,7 +122,7 @@ module IFM_Dat_Chunk_Comb_Stacking #(
 
 	always_comb begin
 		for (integer i=0; i<`COMPUTE_UNIT_NUM; i=i+1) begin
-			if (rd_sel_w[i])
+			if (rd_sel_i)
 				rd_data_o[i] = rd_data_w[1][i];
 			else
 				rd_data_o[i] = rd_data_w[0][i];
@@ -130,23 +130,23 @@ module IFM_Dat_Chunk_Comb_Stacking #(
 	end
 	
 //	wire gated_clk_w = clk_i && (clk_i || ((rd_sparsemap_addr_i[i] == (`RD_DAT_CYC_NUM-1)) && pri_enc_last_i[i]));
-	always_ff @(posedge clk_i) begin
-		for (integer i=0; i<`COMPUTE_UNIT_NUM; i=i+1) begin
-			if (rst_i) begin
-				rd_sel_r[i] <= 1'b0;
-			end
-			else begin
-				if ((rd_sparsemap_addr_i[i] == (`RD_DAT_CYC_NUM-1)) && pri_enc_last_i[i])
-					rd_sel_r[i] <= ~rd_sel_i;
-				else
-					rd_sel_r[i] <= rd_sel_w[i];
-			end
-		end
-	end	
-
-	for (genvar n=0; n<`COMPUTE_UNIT_NUM; n=n+1) begin
-		assign rd_sel_w[n] = sub_chunk_start_i ? rd_sel_i : rd_sel_r[n];
-	end
+//	always_ff @(posedge clk_i) begin
+//		for (integer i=0; i<`COMPUTE_UNIT_NUM; i=i+1) begin
+//			if (rst_i) begin
+//				rd_sel_r[i] <= 1'b0;
+//			end
+//			else begin
+//				if ((rd_sparsemap_addr_i[i] == (`RD_DAT_CYC_NUM-1)) && pri_enc_last_i[i])
+//					rd_sel_r[i] <= ~rd_sel_i;
+//				else
+//					rd_sel_r[i] <= rd_sel_w[i];
+//			end
+//		end
+//	end	
+//
+//	for (genvar n=0; n<`COMPUTE_UNIT_NUM; n=n+1) begin
+//		assign rd_sel_w[n] = sub_chunk_start_i ? rd_sel_i : rd_sel_r[n];
+//	end
 
 
 endmodule
