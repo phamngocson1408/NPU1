@@ -32,3 +32,4 @@
 20221029-17:46 - Before changing name
 20221030 - Finish makine CHANNEL_PADDING
 20221101 - Before making short channel
+20221102 - After making short channel
