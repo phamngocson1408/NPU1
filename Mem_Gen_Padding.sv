@@ -107,9 +107,7 @@ int fil_chunk_dat_size = 0;
 int fil_chunk_dat_wr_cyc_num = 0;
 int ifm_chunk_dat_size = 0;
 int ifm_chunk_dat_wr_cyc_num = 0;
-//logic [31:0] ifm_z_idx_w;
-//logic [31:0] ifm_y_idx_w;
-//logic [31:0] ifm_x_idx_w;
+
 initial begin
 	ifm_sram_wr_chunk_count_o = 0;
 	@(posedge mem_gen_start_i) #1;	
@@ -159,11 +157,7 @@ initial begin
 
 				for (integer ifm_y_idx = 0; ifm_y_idx < `LAYER_IFM_SIZE_Y; ifm_y_idx += 1) begin
 					for (integer ifm_x_idx = 0; ifm_x_idx < `LAYER_IFM_SIZE_X; ifm_x_idx += 1) begin
-
-						//ifm_sram_wr_chunk_count_o = (ifm_z_idx * `LAYER_IFM_SIZE_Y * `LAYER_IFM_SIZE_X) + (ifm_y_idx * `LAYER_IFM_SIZE_X) + ifm_x_idx;
-						//ifm_z_idx_w = ifm_z_idx;
-						//ifm_y_idx_w = ifm_y_idx;
-						//ifm_x_idx_w = ifm_x_idx;
+						ifm_sram_wr_chunk_count_o = (ifm_z_idx * `LAYER_IFM_SIZE_Y * `LAYER_IFM_SIZE_X) + (ifm_y_idx * `LAYER_IFM_SIZE_X) + ifm_x_idx;
 						gen_ifm_buf(ifm_chunk_dat_size);
 						ifm_sram_wr_dat_count_o = 0;
 						repeat(ifm_chunk_dat_wr_cyc_num) begin
@@ -172,7 +166,6 @@ initial begin
 							@(posedge clk_i) #1;
 							ifm_sram_wr_dat_count_o = ifm_sram_wr_dat_count_o + 1;
 						end
-						ifm_sram_wr_chunk_count_o += 1;
 					end
 				end
 			end

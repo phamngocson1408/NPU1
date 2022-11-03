@@ -49,7 +49,7 @@ module IFM_Dat_Chunk_Comb_Stacking #(
 	logic [1:0][`CHUNK_SIZE:1][7:0] rd_nonzero_data_w;
 	logic [1:0][`CHUNK_SIZE-1:0] rd_sparsemap_w;
 
-	logic [`COMPUTE_UNIT_NUM-1:0] rd_sel_r, rd_sel_w;
+//	logic [`COMPUTE_UNIT_NUM-1:0] rd_sel_r, rd_sel_w;
 
 	logic [1:0][`COMPUTE_UNIT_NUM-1:0][`PREFIX_SUM_SIZE*2-1:0] rd_sparsemap_o_w;
 	logic [`COMPUTE_UNIT_NUM-1:0][`PREFIX_SUM_SIZE*2-1:0] rd_sparsemap_o_comb_w;
@@ -115,7 +115,7 @@ module IFM_Dat_Chunk_Comb_Stacking #(
 	always_comb begin
 		for (integer i=0; i<2; i=i+1) begin
 			for (integer j=0; j<`COMPUTE_UNIT_NUM; j=j+1) begin
-				rd_data_w[i][j] = rd_nonzero_data_w[i][rd_addr_i[i]];
+				rd_data_w[i][j] = rd_nonzero_data_w[i][rd_addr_i[j]];
 			end
 		end
 	end
