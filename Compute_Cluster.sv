@@ -44,11 +44,14 @@ module Compute_Cluster #(
 	,input total_chunk_start_i
 
 `ifdef CHANNEL_STACKING
-	,input [$clog2(`PREFIX_SUM_SIZE)-1:0] sparsemap_shift_left_i
-	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_ifm_sparsemap_first_i
-	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_ifm_sparsemap_next_i
-	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_fil_sparsemap_first_i
-	,input [$clog2(`LAYER_FILTER_SIZE_MAX)-1:0] rd_fil_nonzero_dat_first_i
+	,input inner_loop_start_i
+
+	,input [31:0] ifm_loop_y_idx_i
+	,input [31:0] fil_loop_y_idx_start_i 
+	,input [31:0] fil_loop_y_idx_last_i 
+	,input [31:0] fil_loop_y_step_i 
+	,input [31:0] sub_channel_size_i 
+	,output logic inner_loop_finish_o
 `endif
 	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_fil_sparsemap_last_i
 
@@ -73,7 +76,8 @@ module Compute_Cluster #(
 `endif
 
 `ifdef CHANNEL_STACKING
-       logic [`COMPUTE_UNIT_NUM-1:0] pri_enc_last_w;
+	logic [`COMPUTE_UNIT_NUM-1:0] pri_enc_last_w;
+	logic [$clog2(`PREFIX_SUM_SIZE)-1:0] sparsemap_shift_left_w;
 `endif
 
 	genvar i;
@@ -106,18 +110,19 @@ module Compute_Cluster #(
 			,.sub_chunk_start_i(total_chunk_start_i)
 
 `ifdef CHANNEL_STACKING
-			,.sparsemap_shift_left_i
-			,.rd_ifm_sparsemap_first_i
-			,.rd_ifm_sparsemap_next_i
-			,.rd_fil_sparsemap_first_i
-			,.rd_fil_nonzero_dat_first_i
+			,.inner_loop_start_i	
+			,.ifm_loop_y_idx_i
+			,.fil_loop_y_idx_start_i
+			,.fil_loop_y_idx_last_i	
+			,.fil_loop_y_step_i	
+			,.sub_channel_size_i	
+			,.inner_loop_finish_o
+			,.sparsemap_shift_left_o(sparsemap_shift_left_w)
 `endif
 			,.rd_fil_sparsemap_last_i
 			,.sub_chunk_end_o(chunk_end_w[i])
 
 			,.acc_buf_sel_i
-
-//			,.out_buf_sel_i
 			,.out_buf_dat_o(out_buf_dat_w[i])
 		);
 	end
@@ -142,9 +147,7 @@ module Compute_Cluster #(
   		,.wr_sel_i(ifm_chunk_wr_sel_i)
   		,.rd_sel_i(ifm_chunk_rd_sel_i)
   
-//		,.sub_chunk_start_i(total_chunk_start_i)
-  		,.sparsemap_shift_left_i
-//  		,.pri_enc_last_i(pri_enc_last_w)
+  		,.sparsemap_shift_left_i(sparsemap_shift_left_w)
   
   		,.rd_addr_i(rd_addr_w)
   		,.rd_data_o(rd_data_w)

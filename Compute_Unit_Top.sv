@@ -50,25 +50,36 @@ module Compute_Unit_Top #(
 	,input sub_chunk_start_i
 
 `ifdef CHANNEL_STACKING
-	,input [$clog2(`PREFIX_SUM_SIZE)-1:0] sparsemap_shift_left_i
-	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_ifm_sparsemap_first_i
-	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_ifm_sparsemap_next_i
-	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_fil_sparsemap_first_i
-	,input [$clog2(`LAYER_FILTER_SIZE_MAX)-1:0] rd_fil_nonzero_dat_first_i
+	,input inner_loop_start_i
+	,input [31:0] ifm_loop_y_idx_i
+	,input [31:0] fil_loop_y_idx_start_i 
+	,input [31:0] fil_loop_y_idx_last_i 
+	,input [31:0] fil_loop_y_step_i 
+	,input [31:0] sub_channel_size_i 
+	,output logic inner_loop_finish_o
+	,output logic [$clog2(`PREFIX_SUM_SIZE)-1:0] sparsemap_shift_left_o
 `endif
 	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_fil_sparsemap_last_i
 
 	,output sub_chunk_end_o
 
 	,input [$clog2(`OUTPUT_BUF_NUM)-1:0] acc_buf_sel_i
-
-//	,input [$clog2(`OUTPUT_BUF_NUM)-1:0] out_buf_sel_i
 	,output [`OUTPUT_BUF_SIZE-1:0] out_buf_dat_o
 );
 
 	logic [`OUTPUT_BUF_SIZE-1:0] acc_dat_i_w;
 	logic acc_val_o_w;
 	logic [`OUTPUT_BUF_SIZE-1:0] acc_dat_o_w;
+
+`ifdef CHANNEL_STACKING
+	logic [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_fil_sparsemap_first_w;
+	logic [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_fil_sparsemap_last_w;
+	logic [$clog2(`LAYER_FILTER_SIZE_MAX)-1:0] rd_fil_nonzero_dat_first_w;
+	logic [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_ifm_sparsemap_first_w;
+	logic [$clog2(`PREFIX_SUM_SIZE)-1:0] sparsemap_shift_left_w;
+	logic [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_ifm_sparsemap_next_w;
+	logic [$clog2(`OUTPUT_BUF_NUM)-1:0] acc_buf_sel_w;
+`endif
 
 	Compute_Unit u_Compute_Unit (
 		 .rst_i
@@ -100,13 +111,15 @@ module Compute_Unit_Top #(
 
 `ifdef CHANNEL_STACKING
 		,.pri_enc_last_o()
-		,.sparsemap_shift_left_i
-		,.rd_ifm_sparsemap_first_i
-		,.rd_ifm_sparsemap_next_i
-		,.rd_fil_sparsemap_first_i
-		,.rd_fil_nonzero_dat_first_i
-`endif
+		,.sparsemap_shift_left_i	(sparsemap_shift_left_o)
+		,.rd_ifm_sparsemap_first_i	(rd_ifm_sparsemap_first_w)
+		,.rd_ifm_sparsemap_next_i	(rd_ifm_sparsemap_next_w)
+		,.rd_fil_sparsemap_first_i	(rd_fil_sparsemap_first_w)
+		,.rd_fil_nonzero_dat_first_i	(rd_fil_nonzero_dat_first_w)
+		,.rd_fil_sparsemap_last_i	(rd_fil_sparsemap_last_w)
+`elsif CHANNEL_PADDING
 		,.rd_fil_sparsemap_last_i
+`endif
 
 		,.sub_chunk_end_o
 		
@@ -119,13 +132,40 @@ module Compute_Unit_Top #(
 		 .rst_i
 		,.clk_i
 
+`ifdef CHANNEL_STACKING
+		,.acc_sel_i(acc_buf_sel_w)
+`elsif CHANNEL_PADDING
 		,.acc_sel_i(acc_buf_sel_i)
+`endif
 		,.acc_val_i(acc_val_o_w)
 		,.acc_dat_i(acc_dat_o_w)
 		,.acc_dat_o(acc_dat_i_w)
 
-//		,.out_sel_i(out_buf_sel_i)
 		,.out_dat_o(out_buf_dat_o)
 	);
+
+`ifdef CHANNEL_STACKING
+Stacking_Inner_Loop u_Stacking_Inner_Loop(
+		 .clk_i
+
+		,.inner_loop_start_i	
+		,.sub_chunk_end_i	(sub_chunk_end_o)
+		,.ifm_loop_y_idx_i
+		,.fil_loop_y_idx_start_i
+		,.fil_loop_y_idx_last_i	
+		,.fil_loop_y_step_i	
+		,.sub_channel_size_i	
+		
+		
+		,.rd_fil_sparsemap_first_o	(rd_fil_sparsemap_first_w)
+		,.rd_fil_sparsemap_last_o	(rd_fil_sparsemap_last_w)
+		,.rd_fil_nonzero_dat_first_o	(rd_fil_nonzero_dat_first_w)
+		,.rd_ifm_sparsemap_first_o	(rd_ifm_sparsemap_first_w)
+		,.sparsemap_shift_left_o	
+		,.rd_ifm_sparsemap_next_o	(rd_ifm_sparsemap_next_w)
+		,.acc_buf_sel_o			(acc_buf_sel_w)
+		,.inner_loop_finish_o
+	);
+`endif
 	
 endmodule

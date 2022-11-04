@@ -21,8 +21,6 @@
 
 
 module IFM_Dat_Chunk_Comb_Stacking #(
-//	 localparam int `WR_DAT_CYC_NUM = `CHUNK_SIZE/`BUS_SIZE
-//	,localparam int `RD_DAT_CYC_NUM = `CHUNK_SIZE/`PREFIX_SUM_SIZE
 )(
 	 input rst_i
 	,input clk_i
@@ -34,9 +32,7 @@ module IFM_Dat_Chunk_Comb_Stacking #(
 	,input wr_sel_i
 	,input rd_sel_i
 
-//	,input sub_chunk_start_i
 	,input [$clog2(`PREFIX_SUM_SIZE)-1:0] sparsemap_shift_left_i
-//	,input [`COMPUTE_UNIT_NUM-1:0] pri_enc_last_i
 
 	,input [`COMPUTE_UNIT_NUM-1:0][$clog2(`CHUNK_SIZE):0] rd_addr_i
 	,output logic [`COMPUTE_UNIT_NUM-1:0][7:0] rd_data_o
@@ -49,16 +45,11 @@ module IFM_Dat_Chunk_Comb_Stacking #(
 	logic [1:0][`CHUNK_SIZE:1][7:0] rd_nonzero_data_w;
 	logic [1:0][`CHUNK_SIZE-1:0] rd_sparsemap_w;
 
-//	logic [`COMPUTE_UNIT_NUM-1:0] rd_sel_r, rd_sel_w;
-
 	logic [1:0][`COMPUTE_UNIT_NUM-1:0][`PREFIX_SUM_SIZE*2-1:0] rd_sparsemap_o_w;
 	logic [`COMPUTE_UNIT_NUM-1:0][`PREFIX_SUM_SIZE*2-1:0] rd_sparsemap_o_comb_w;
 	logic [`COMPUTE_UNIT_NUM-1:0][`PREFIX_SUM_SIZE*2-1:0] rd_sparsemap_o_shift_w;
 
 	logic [1:0][`COMPUTE_UNIT_NUM-1:0][7:0] rd_data_w;
-
-//	genvar n;
-//	integer i, j, k;
 
 	for (genvar n=0; n<2; n=n+1) begin
 		Dat_Chunk_Comb u_Dat_Chunk_Comb (

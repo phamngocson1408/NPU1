@@ -72,6 +72,16 @@ logic 					fil_sram_wr_valid_w;
 logic [$clog2(`WR_DAT_CYC_NUM)-1:0]	fil_sram_wr_dat_count_w;
 logic [$clog2(`SRAM_FILTER_NUM)-1:0] 	fil_sram_wr_chunk_count_w;
 
+`ifdef CHANNEL_STACKING
+logic inner_loop_start;
+int ifm_loop_y_idx;
+int fil_loop_y_idx_start;
+int fil_loop_y_idx_last;
+int fil_loop_y_step;
+int sub_channel_size;
+logic inner_loop_finish_o;
+`endif
+
 Compute_Cluster_Mem u_Compute_Cluster_Mem (
 	 .rst_i
 	,.clk_i
@@ -93,11 +103,14 @@ Compute_Cluster_Mem u_Compute_Cluster_Mem (
 	,.total_chunk_start_i
 
 `ifdef CHANNEL_STACKING
-	,.sparsemap_shift_left_i
-	,.rd_ifm_sparsemap_first_i
-	,.rd_ifm_sparsemap_next_i
-	,.rd_fil_sparsemap_first_i
-	,.rd_fil_nonzero_dat_first_i
+	,.inner_loop_start_i	(inner_loop_start)	
+
+	,.ifm_loop_y_idx_i	(ifm_loop_y_idx)
+	,.fil_loop_y_idx_start_i(fil_loop_y_idx_start)
+	,.fil_loop_y_idx_last_i	(fil_loop_y_idx_last)
+	,.fil_loop_y_step_i	(fil_loop_y_step)	
+	,.sub_channel_size_i	(sub_channel_size)	
+	,.inner_loop_finish_o
 `endif
 	,.rd_fil_sparsemap_last_i
 	,.total_chunk_end_o
@@ -200,14 +213,9 @@ int ifm_chunk_dat_size;
 int ifm_chunk_dat_wr_cyc_num;
 
 int loop_z_idx;
-int sub_channel_size;
 
-int ifm_loop_y_idx;
 
 int fil_loop_y_idx;
-int fil_loop_y_idx_last;
-int fil_loop_y_idx_start;
-int fil_loop_y_step;
 int fil_loop_y_dat_size;
 
 int ifm_loop_x_idx;
@@ -221,9 +229,6 @@ initial begin
 	fil_chunk_wr_sel_i = 1;
 	fil_chunk_rd_sel_i = 0;
 	fil_sram_rd_count_i = 0;
-
-	acc_buf_sel_i = 0;
-	sparsemap_shift_left_i = 0;
 
 	@(negedge rst_i) ;
 	@(posedge clk_i) #1;
@@ -296,29 +301,16 @@ initial begin
 				fil_loop_y_idx_start = `LAYER_FILTER_SIZE_Y - 1 - ((`LAYER_IFM_SIZE_Y - 1) - ifm_loop_y_idx);
 				fil_loop_y_idx_last = `LAYER_FILTER_SIZE_Y - 1;
 			end
-			
-			for (fil_loop_y_idx = fil_loop_y_idx_start; fil_loop_y_idx <= fil_loop_y_idx_last; fil_loop_y_idx += 1) begin
-				rd_fil_sparsemap_first_i = fil_loop_y_idx * `LAYER_FILTER_SIZE_X;
-				rd_fil_sparsemap_last_i =  rd_fil_sparsemap_first_i + fil_loop_y_step - 1;
-				rd_fil_nonzero_dat_first_i = fil_loop_y_idx;
 
-				ifm_loop_x_dat_start = 0;
-
-				for (ifm_loop_x_idx = 0; ifm_loop_x_idx < `LAYER_OUTPUT_SIZE_X; ifm_loop_x_idx += 1) begin
-					rd_ifm_sparsemap_first_i = ifm_loop_x_dat_start / `PREFIX_SUM_SIZE;
-					sparsemap_shift_left_i = ifm_loop_x_dat_start % `PREFIX_SUM_SIZE;
-
-					if (ifm_loop_x_idx == `LAYER_OUTPUT_SIZE_X - 1)
-						rd_ifm_sparsemap_next_i = 0;
-					else
-						rd_ifm_sparsemap_next_i = sub_channel_size - 1;
-
-					acc_buf_sel_i = (ifm_loop_y_idx - fil_loop_y_idx) * `LAYER_OUTPUT_SIZE_X + ifm_loop_x_idx;
-
-					@sub_chunk_end_event;
-					ifm_loop_x_dat_start += sub_channel_size; 
-				end
+			inner_loop_start = 1;
+			fork
+			begin
+				@ (posedge clk_i);
+				inner_loop_start = 0;
 			end
+			join_none
+
+			@ (posedge inner_loop_finish_o);
 		end
 	end
 	$finish();
