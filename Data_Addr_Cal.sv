@@ -51,21 +51,27 @@ module Data_Addr_Cal #(
 `ifdef CHANNEL_STACKING
 	logic [`LAYER_FILTER_SIZE_MAX-1:0][$clog2(`CHUNK_SIZE):0] rd_dat_base_addr_next_r;
 	logic [$clog2(`CHUNK_SIZE):0] rd_dat_base_addr_next_w;
-	assign rd_dat_base_addr_next_w = (rd_fil_nonzero_dat_first_i == 0) ? {($clog2(`CHUNK_SIZE) + 1){1'b0}} : rd_dat_base_addr_next_r[rd_fil_nonzero_dat_first_i-1];
+	assign rd_dat_base_addr_next_w = rd_dat_base_addr_next_r[rd_fil_nonzero_dat_first_i];
 
-	always_ff @(posedge clk_i) begin
-		if (rst_i) begin
-			for (int i=0; i<`LAYER_FILTER_SIZE_MAX; i=i+1) begin
-				rd_dat_base_addr_next_r[i] <= {($clog2(`LAYER_FILTER_SIZE_MAX)){1'b0}};
-			end
-		end
-		else if (sub_chunk_end_i) begin
-			for (int i=0; i<`LAYER_FILTER_SIZE_MAX; i=i+1) begin
-				if (rd_fil_nonzero_dat_first_i == i)
-					rd_dat_base_addr_next_r[i] <= rd_data_base_addr_r + prefix_sum_out_w[`PREFIX_SUM_SIZE-1];
-			end
-		end
+initial begin
+	for (int i=0; i<`LAYER_FILTER_SIZE_MAX; i=i+1) begin
+		rd_dat_base_addr_next_r[i] <= i * `LAYER_FILTER_SIZE_X * `DIVIDED_CHANNEL_NUM;
 	end
+end
+
+//	always_ff @(posedge clk_i) begin
+//		if (rst_i) begin
+//			for (int i=0; i<`LAYER_FILTER_SIZE_MAX; i=i+1) begin
+//				rd_dat_base_addr_next_r[i] <= {($clog2(`LAYER_FILTER_SIZE_MAX)){1'b0}};
+//			end
+//		end
+//		else if (sub_chunk_end_i) begin
+//			for (int i=0; i<`LAYER_FILTER_SIZE_MAX; i=i+1) begin
+//				if (rd_fil_nonzero_dat_first_i == i)
+//					rd_dat_base_addr_next_r[i] <= rd_data_base_addr_r + prefix_sum_out_w[`PREFIX_SUM_SIZE-1];
+//			end
+//		end
+//	end
 
 	always_ff @(posedge clk_i) begin
 		if (rst_i) begin

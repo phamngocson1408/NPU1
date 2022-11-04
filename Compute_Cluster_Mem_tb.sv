@@ -194,15 +194,24 @@ end
 localparam int SIM_LOOP_Z_NUM = (`LAYER_CHANNEL_NUM % `DIVIDED_CHANNEL_NUM) ? (`LAYER_CHANNEL_NUM / `DIVIDED_CHANNEL_NUM) + 1 : (`LAYER_CHANNEL_NUM / `DIVIDED_CHANNEL_NUM);
 localparam int SIM_LAST_CHANNEL_SIZE = (`LAYER_CHANNEL_NUM % `DIVIDED_CHANNEL_NUM) ? (`LAYER_CHANNEL_NUM % `DIVIDED_CHANNEL_NUM) : `DIVIDED_CHANNEL_NUM;
 
-int fil_loop_y_idx_last;
-int fil_loop_y_idx_start;
-int ifm_chunk_start_idx;
-int sub_channel_size;
-
-int fil_chunk_dat_size;
-int fil_chunk_dat_wr_cyc_num;
+int fil_chunk_dat_size = `LAYER_FILTER_SIZE_X * `LAYER_FILTER_SIZE_Y * `DIVIDED_CHANNEL_NUM;
+int fil_chunk_dat_wr_cyc_num = (fil_chunk_dat_size % `BUS_SIZE) ? fil_chunk_dat_size/`BUS_SIZE + 1 : fil_chunk_dat_size/`BUS_SIZE;
 int ifm_chunk_dat_size;
 int ifm_chunk_dat_wr_cyc_num;
+
+int loop_z_idx;
+int sub_channel_size;
+
+int ifm_loop_y_idx;
+
+int fil_loop_y_idx;
+int fil_loop_y_idx_last;
+int fil_loop_y_idx_start;
+int fil_loop_y_step;
+int fil_loop_y_dat_size;
+
+int ifm_loop_x_idx;
+int ifm_loop_x_dat_start;
 
 initial begin
 	run_valid_i = 0;
@@ -239,8 +248,6 @@ initial begin
 
 	fork
 		begin
-			fil_chunk_dat_size = `LAYER_FILTER_SIZE_X * `LAYER_FILTER_SIZE_Y * sub_channel_size;
-			fil_chunk_dat_wr_cyc_num = (fil_chunk_dat_size % `BUS_SIZE) ? fil_chunk_dat_size/`BUS_SIZE + 1 : fil_chunk_dat_size/`BUS_SIZE;
 			wr_fil_chunk(fil_chunk_dat_wr_cyc_num);
 		end
 		begin
@@ -254,21 +261,22 @@ initial begin
 	@(negedge clk_i) #1;
 	run_valid_i = 1'b1;
 
-	for (int loop_z_idx = 0; loop_z_idx < SIM_LOOP_Z_NUM; loop_z_idx += 1 ) begin
+	for (loop_z_idx = 0; loop_z_idx < SIM_LOOP_Z_NUM; loop_z_idx += 1 ) begin
 		if (loop_z_idx == SIM_LOOP_Z_NUM-1)
 			sub_channel_size = SIM_LAST_CHANNEL_SIZE;
 		else
 			sub_channel_size = `DIVIDED_CHANNEL_NUM;
 
+		fil_loop_y_dat_size = `LAYER_FILTER_SIZE_X * sub_channel_size;
+		fil_loop_y_step = (fil_loop_y_dat_size % `PREFIX_SUM_SIZE) ? fil_loop_y_dat_size / `PREFIX_SUM_SIZE + 1 : fil_loop_y_dat_size / `PREFIX_SUM_SIZE;
+
 		fork begin
 			fil_sram_rd_count_i = loop_z_idx + 1;
-			fil_chunk_dat_size = `LAYER_FILTER_SIZE_X * `LAYER_FILTER_SIZE_Y * sub_channel_size;
-			fil_chunk_dat_wr_cyc_num = (fil_chunk_dat_size % `BUS_SIZE) ? fil_chunk_dat_size/`BUS_SIZE + 1 : fil_chunk_dat_size/`BUS_SIZE;
 			wr_fil_chunk(fil_chunk_dat_wr_cyc_num);
 		end join_none
 
 
-		for (int ifm_loop_y_idx = 0; ifm_loop_y_idx < `LAYER_IFM_SIZE_Y; ifm_loop_y_idx += 1) begin
+		for (ifm_loop_y_idx = 0; ifm_loop_y_idx < `LAYER_IFM_SIZE_Y; ifm_loop_y_idx += 1) begin
 			fork begin
 					ifm_sram_rd_count_i =  loop_z_idx * `LAYER_IFM_SIZE_Y + ifm_loop_y_idx + 1;
 					ifm_chunk_dat_size = `LAYER_IFM_SIZE_X * sub_channel_size;
@@ -285,20 +293,20 @@ initial begin
 				fil_loop_y_idx_last = `LAYER_FILTER_SIZE_Y-1;
 			end
 			else begin
-				fil_loop_y_idx_start = `LAYER_FILTER_SIZE_Y - (`LAYER_IFM_SIZE_Y - ifm_loop_y_idx) - 1;
+				fil_loop_y_idx_start = `LAYER_FILTER_SIZE_Y - 1 - ((`LAYER_IFM_SIZE_Y - 1) - ifm_loop_y_idx);
 				fil_loop_y_idx_last = `LAYER_FILTER_SIZE_Y - 1;
 			end
 			
-			for (int fil_loop_y_idx = fil_loop_y_idx_start; fil_loop_y_idx <= fil_loop_y_idx_last; fil_loop_y_idx += 1) begin
+			for (fil_loop_y_idx = fil_loop_y_idx_start; fil_loop_y_idx <= fil_loop_y_idx_last; fil_loop_y_idx += 1) begin
 				rd_fil_sparsemap_first_i = fil_loop_y_idx * `LAYER_FILTER_SIZE_X;
-				rd_fil_sparsemap_last_i =  rd_fil_sparsemap_first_i + `LAYER_FILTER_SIZE_X - 1;
+				rd_fil_sparsemap_last_i =  rd_fil_sparsemap_first_i + fil_loop_y_step - 1;
 				rd_fil_nonzero_dat_first_i = fil_loop_y_idx;
 
-				ifm_chunk_start_idx = 0;
+				ifm_loop_x_dat_start = 0;
 
-				for (int ifm_loop_x_idx = 0; ifm_loop_x_idx < `LAYER_OUTPUT_SIZE_X; ifm_loop_x_idx += 1) begin
-					rd_ifm_sparsemap_first_i = ifm_chunk_start_idx / `PREFIX_SUM_SIZE;
-					sparsemap_shift_left_i = ifm_chunk_start_idx % `PREFIX_SUM_SIZE;
+				for (ifm_loop_x_idx = 0; ifm_loop_x_idx < `LAYER_OUTPUT_SIZE_X; ifm_loop_x_idx += 1) begin
+					rd_ifm_sparsemap_first_i = ifm_loop_x_dat_start / `PREFIX_SUM_SIZE;
+					sparsemap_shift_left_i = ifm_loop_x_dat_start % `PREFIX_SUM_SIZE;
 
 					if (ifm_loop_x_idx == `LAYER_OUTPUT_SIZE_X - 1)
 						rd_ifm_sparsemap_next_i = 0;
@@ -308,7 +316,7 @@ initial begin
 					acc_buf_sel_i = (ifm_loop_y_idx - fil_loop_y_idx) * `LAYER_OUTPUT_SIZE_X + ifm_loop_x_idx;
 
 					@sub_chunk_end_event;
-					ifm_chunk_start_idx += sub_channel_size; 
+					ifm_loop_x_dat_start += sub_channel_size; 
 				end
 			end
 		end
