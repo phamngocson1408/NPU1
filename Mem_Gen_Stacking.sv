@@ -76,7 +76,7 @@ logic [`SIM_CHUNK_SIZE-1:0][`DAT_SIZE-1:0] fil_sram_non_zero_data_r = {`SIM_CHUN
 logic [`SIM_CHUNK_SIZE-1:0] fil_sram_sparse_map_r;
 
 localparam int FIL_SUB_CHUNK_SIZE = `LAYER_FILTER_SIZE_X * `DIVIDED_CHANNEL_NUM;
-localparam int FIL_SUB_CHUNK_REMAIN = `SIM_CHUNK_SIZE % FIL_SUB_CHUNK_SIZE;
+//localparam int FIL_SUB_CHUNK_REMAIN = `SIM_CHUNK_SIZE % FIL_SUB_CHUNK_SIZE;
 
 task automatic gen_fil_buf(int sub_chunk_dat_size);
 	int data;
@@ -104,9 +104,9 @@ task automatic gen_fil_buf(int sub_chunk_dat_size);
 			end
 		end
 	end
-	for (int loop_x_idx = 0; loop_x_idx < FIL_SUB_CHUNK_REMAIN; loop_x_idx += 1) begin
-			fil_sram_sparse_map_r[`LAYER_FILTER_SIZE_Y * FIL_SUB_CHUNK_SIZE + loop_x_idx] = 0;
-	end
+//	for (int loop_x_idx = 0; loop_x_idx < FIL_SUB_CHUNK_REMAIN; loop_x_idx += 1) begin
+//			fil_sram_sparse_map_r[`LAYER_FILTER_SIZE_Y * FIL_SUB_CHUNK_SIZE + loop_x_idx] = 0;
+//	end
 endtask
 
 localparam int SIM_LOOP_Z_NUM = (`LAYER_CHANNEL_NUM % `DIVIDED_CHANNEL_NUM) ? (`LAYER_CHANNEL_NUM / `DIVIDED_CHANNEL_NUM) + 1 : (`LAYER_CHANNEL_NUM / `DIVIDED_CHANNEL_NUM);
@@ -133,14 +133,16 @@ initial begin
 
 				fil_chunk_dat_wr_cyc_num = `LAYER_FILTER_SIZE_Y * `LAYER_FILTER_SIZE_X;
 
-				fil_sram_wr_chunk_count_o = loop_z_idx;
-				gen_fil_buf(fil_sub_chunk_dat_size);
-				fil_sram_wr_dat_count_o = 0;
-				repeat(fil_chunk_dat_wr_cyc_num) begin
-					fil_sram_wr_sparsemap_o = fil_sram_sparse_map_r[`BUS_SIZE*fil_sram_wr_dat_count_o +: `BUS_SIZE];
-					fil_sram_wr_nonzero_data_o = fil_sram_non_zero_data_r[`BUS_SIZE*fil_sram_wr_dat_count_o +: `BUS_SIZE];
-					@(posedge clk_i) #1;
-					fil_sram_wr_dat_count_o = fil_sram_wr_dat_count_o + 1;
+				for (int chunk_cu_idx = 0; chunk_cu_idx < `COMPUTE_UNIT_NUM; chunk_cu_idx += 1) begin
+					fil_sram_wr_chunk_count_o = loop_z_idx * `COMPUTE_UNIT_NUM + chunk_cu_idx;
+					gen_fil_buf(fil_sub_chunk_dat_size);
+					fil_sram_wr_dat_count_o = 0;
+					repeat(fil_chunk_dat_wr_cyc_num) begin
+						fil_sram_wr_sparsemap_o = fil_sram_sparse_map_r[`BUS_SIZE*fil_sram_wr_dat_count_o +: `BUS_SIZE];
+						fil_sram_wr_nonzero_data_o = fil_sram_non_zero_data_r[`BUS_SIZE*fil_sram_wr_dat_count_o +: `BUS_SIZE];
+						@(posedge clk_i) #1;
+						fil_sram_wr_dat_count_o = fil_sram_wr_dat_count_o + 1;
+					end
 				end
 			end
 			fil_sram_wr_valid_o = 1'b0;

@@ -39,24 +39,18 @@ logic [$clog2(`WR_DAT_CYC_NUM)-1:0] fil_chunk_wr_count_i ;
 logic fil_chunk_wr_sel_i;
 logic fil_chunk_rd_sel_i;
 logic [`COMPUTE_UNIT_NUM-1:0] fil_chunk_cu_wr_sel_i = 1;
-logic [$clog2(`SRAM_FILTER_NUM)-1:0] fil_sram_rd_count_i;
+logic [$clog2(`SRAM_FILTER_NUM)-1:0] fil_sram_rd_count_i, fil_sram_rd_count_r;
 
 logic run_valid_i;
+
+`ifdef CHANNEL_PADDING
 logic total_chunk_start_i;
-
-`ifdef CHANNEL_STACKING
-logic [$clog2(`PREFIX_SUM_SIZE)-1:0] sparsemap_shift_left_i;
-logic [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_ifm_sparsemap_first_i;
-logic [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_ifm_sparsemap_next_i;
-logic [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_fil_sparsemap_first_i;
-logic [$clog2(`LAYER_FILTER_SIZE_MAX)-1:0] rd_fil_nonzero_dat_first_i;
-`endif
-
 logic [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_fil_sparsemap_last_i;
+logic [$clog2(`OUTPUT_BUF_NUM)-1:0] acc_buf_sel_i;
+`endif
 
 logic total_chunk_end_o;
 
-logic [$clog2(`OUTPUT_BUF_NUM)-1:0] acc_buf_sel_i;
 logic [$clog2(`COMPUTE_UNIT_NUM)-1:0] com_unit_out_buf_sel_i = 0;
 logic [`OUTPUT_BUF_SIZE-1:0] out_buf_dat_o;
 
@@ -79,7 +73,7 @@ int fil_loop_y_idx_start;
 int fil_loop_y_idx_last;
 int fil_loop_y_step;
 int sub_channel_size;
-logic inner_loop_finish_o;
+logic total_inner_loop_finish_o;
 `endif
 
 Compute_Cluster_Mem u_Compute_Cluster_Mem (
@@ -100,22 +94,22 @@ Compute_Cluster_Mem u_Compute_Cluster_Mem (
 	,.fil_sram_rd_count_i
 
 	,.run_valid_i
-	,.total_chunk_start_i
 
 `ifdef CHANNEL_STACKING
 	,.inner_loop_start_i	(inner_loop_start)	
-
 	,.ifm_loop_y_idx_i	(ifm_loop_y_idx)
 	,.fil_loop_y_idx_start_i(fil_loop_y_idx_start)
 	,.fil_loop_y_idx_last_i	(fil_loop_y_idx_last)
 	,.fil_loop_y_step_i	(fil_loop_y_step)	
 	,.sub_channel_size_i	(sub_channel_size)	
-	,.inner_loop_finish_o
-`endif
+	,.total_inner_loop_finish_o
+`elsif CHANNEL_PADDING
+	,.total_chunk_start_i
 	,.rd_fil_sparsemap_last_i
+	,.acc_buf_sel_i
+`endif
 	,.total_chunk_end_o
 
-	,.acc_buf_sel_i
 	,.com_unit_out_buf_sel_i
 	,.out_buf_dat_o
 
@@ -179,13 +173,22 @@ endtask
 
 task wr_fil_chunk(int fil_chunk_dat_wr_cyc_num);
 	fil_chunk_wr_valid_i = 1;
-	fil_chunk_wr_count_i = 0;
 	fil_chunk_wr_sel_i = ~fil_chunk_wr_sel_i;
 	fil_chunk_rd_sel_i = ~fil_chunk_rd_sel_i;
-	repeat (fil_chunk_dat_wr_cyc_num) begin
-		@(posedge clk_i) #1;
-		fil_chunk_wr_count_i += 1;
-		total_fil_dat_rd_num_r += `BUS_SIZE;
+
+	for (int cu_idx = 0; cu_idx < `COMPUTE_UNIT_NUM; cu_idx += 1) begin
+		fil_sram_rd_count_i = fil_sram_rd_count_r * `COMPUTE_UNIT_NUM + cu_idx;
+		if (cu_idx == 0)
+			fil_chunk_cu_wr_sel_i = 1;
+		else
+			fil_chunk_cu_wr_sel_i = 1 << cu_idx;
+
+		fil_chunk_wr_count_i = 0;
+		repeat (fil_chunk_dat_wr_cyc_num) begin
+			@(posedge clk_i) #1;
+			fil_chunk_wr_count_i += 1;
+			total_fil_dat_rd_num_r += `BUS_SIZE;
+		end
 	end
 	fil_chunk_wr_valid_i = 0;
 endtask
@@ -228,7 +231,7 @@ initial begin
 	ifm_sram_rd_count_i = 0;
 	fil_chunk_wr_sel_i = 1;
 	fil_chunk_rd_sel_i = 0;
-	fil_sram_rd_count_i = 0;
+	fil_sram_rd_count_r = 0;
 
 	@(negedge rst_i) ;
 	@(posedge clk_i) #1;
@@ -276,7 +279,7 @@ initial begin
 		fil_loop_y_step = (fil_loop_y_dat_size % `PREFIX_SUM_SIZE) ? fil_loop_y_dat_size / `PREFIX_SUM_SIZE + 1 : fil_loop_y_dat_size / `PREFIX_SUM_SIZE;
 
 		fork begin
-			fil_sram_rd_count_i = loop_z_idx + 1;
+			fil_sram_rd_count_r = loop_z_idx + 1;
 			wr_fil_chunk(fil_chunk_dat_wr_cyc_num);
 		end join_none
 
@@ -310,7 +313,8 @@ initial begin
 			end
 			join_none
 
-			@ (posedge inner_loop_finish_o);
+			@ (posedge total_inner_loop_finish_o);
+			@ (posedge clk_i);
 		end
 	end
 	$finish();
@@ -330,7 +334,7 @@ initial begin
 	ifm_sram_rd_count_i = 0;
 	fil_chunk_wr_sel_i = 1;
 	fil_chunk_rd_sel_i = 0;
-	fil_sram_rd_count_i = 0;
+	fil_sram_rd_count_r = 0;
 
 	acc_buf_sel_i = 0;
 
@@ -376,7 +380,7 @@ initial begin
 		for (int fil_y_idx = 0; fil_y_idx < `LAYER_FILTER_SIZE_Y; fil_y_idx += 1) begin
 			for (int fil_x_idx = 0; fil_x_idx < `LAYER_FILTER_SIZE_X; fil_x_idx += 1) begin
 				fork begin
-					fil_sram_rd_count_i = (loop_z_idx * `LAYER_FILTER_SIZE_Y * `LAYER_FILTER_SIZE_X) + (fil_y_idx * `LAYER_FILTER_SIZE_X) + fil_x_idx + 1;
+					fil_sram_rd_count_r = (loop_z_idx * `LAYER_FILTER_SIZE_Y * `LAYER_FILTER_SIZE_X) + (fil_y_idx * `LAYER_FILTER_SIZE_X) + fil_x_idx + 1;
 					wr_fil_chunk(chunk_dat_wr_cyc_num);
 				end join_none
 
@@ -417,7 +421,9 @@ always_ff @(posedge clk_i) begin
 		total_chunk_start_r <= 1'b0;
 end
 
+`ifdef CHANNEL_PADDING
 assign total_chunk_start_i = run_valid_i && (total_chunk_start_r || (run_valid_i && (!run_valid_delay_r)));
+`endif
 
 
 endmodule

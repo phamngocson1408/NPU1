@@ -47,6 +47,7 @@ module Input_Selector_v2 #(
 
 	,input run_valid_i
 	,input sub_chunk_start_i
+	,output sub_chunk_end_o
 
 `ifdef CHANNEL_STACKING
 	,output pri_enc_last_o
@@ -63,7 +64,6 @@ module Input_Selector_v2 #(
 `endif
 	,output [7:0] fil_data_o
 	,output data_valid_o
-	,output sub_chunk_end_o
 );
 
 	logic [$clog2(`PREFIX_SUM_SIZE)-1:0] pri_enc_match_addr_w;

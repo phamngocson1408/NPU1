@@ -41,25 +41,22 @@ module Compute_Cluster #(
 	,input [`COMPUTE_UNIT_NUM-1:0] fil_chunk_cu_wr_sel_i
 
 	,input run_valid_i
-	,input total_chunk_start_i
 
 `ifdef CHANNEL_STACKING
 	,input inner_loop_start_i
-
 	,input [31:0] ifm_loop_y_idx_i
 	,input [31:0] fil_loop_y_idx_start_i 
 	,input [31:0] fil_loop_y_idx_last_i 
 	,input [31:0] fil_loop_y_step_i 
 	,input [31:0] sub_channel_size_i 
-	,output logic inner_loop_finish_o
-`endif
+	,output logic total_inner_loop_finish_o
+`elsif CHANNEL_PADDING
+	,input total_chunk_start_i
 	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_fil_sparsemap_last_i
-
+	,input [$clog2(`OUTPUT_BUF_NUM)-1:0] acc_buf_sel_i
+`endif
 	,output total_chunk_end_o
 
-	,input [$clog2(`OUTPUT_BUF_NUM)-1:0] acc_buf_sel_i
-
-//	,input [$clog2(`OUTPUT_BUF_NUM)-1:0] out_buf_sel_i
 	,input [$clog2(`COMPUTE_UNIT_NUM)-1:0] com_unit_out_buf_sel_i
 	,output [`OUTPUT_BUF_SIZE-1:0] out_buf_dat_o
 );
@@ -78,6 +75,7 @@ module Compute_Cluster #(
 `ifdef CHANNEL_STACKING
 	logic [`COMPUTE_UNIT_NUM-1:0] pri_enc_last_w;
 	logic [$clog2(`PREFIX_SUM_SIZE)-1:0] sparsemap_shift_left_w;
+	logic [`COMPUTE_UNIT_NUM-1:0] inner_loop_finish_w;
 `endif
 
 	genvar i;
@@ -107,7 +105,6 @@ module Compute_Cluster #(
 			,.fil_chunk_rd_sel_i
 
 			,.run_valid_i
-			,.sub_chunk_start_i(total_chunk_start_i)
 
 `ifdef CHANNEL_STACKING
 			,.inner_loop_start_i	
@@ -116,13 +113,15 @@ module Compute_Cluster #(
 			,.fil_loop_y_idx_last_i	
 			,.fil_loop_y_step_i	
 			,.sub_channel_size_i	
-			,.inner_loop_finish_o
+			,.inner_loop_finish_o	(inner_loop_finish_w[i])
 			,.sparsemap_shift_left_o(sparsemap_shift_left_w)
-`endif
+`elsif CHANNEL_PADDING
+			,.sub_chunk_start_i(total_chunk_start_i)
 			,.rd_fil_sparsemap_last_i
+			,.acc_buf_sel_i
+`endif
 			,.sub_chunk_end_o(chunk_end_w[i])
 
-			,.acc_buf_sel_i
 			,.out_buf_dat_o(out_buf_dat_w[i])
 		);
 	end
@@ -130,6 +129,10 @@ module Compute_Cluster #(
 	for (i=0; i<`COMPUTE_UNIT_NUM; i=i+1) begin
 		assign fil_wr_valid_w[i] = fil_chunk_cu_wr_sel_i[i] ? fil_chunk_wr_valid_i : 0;
 	end
+
+`ifdef CHANNEL_STACKING
+	assign total_inner_loop_finish_o = &inner_loop_finish_w;
+`endif
 
 	assign total_chunk_end_o = &chunk_end_w;
 	assign out_buf_dat_o = out_buf_dat_w[com_unit_out_buf_sel_i];

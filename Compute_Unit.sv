@@ -48,6 +48,7 @@ module Compute_Unit #(
 
 	,input run_valid_i
 	,input sub_chunk_start_i
+	,output sub_chunk_end_o
 
 `ifdef CHANNEL_STACKING
 	,output pri_enc_last_o
@@ -58,8 +59,6 @@ module Compute_Unit #(
 	,input [$clog2(`LAYER_FILTER_SIZE_MAX)-1:0] rd_fil_nonzero_dat_first_i
 `endif
 	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_fil_sparsemap_last_i
-
-	,output sub_chunk_end_o
 
 	,input [`OUTPUT_BUF_SIZE-1:0] acc_dat_i
 	,output acc_val_o
@@ -98,6 +97,7 @@ module Compute_Unit #(
 		
 		,.run_valid_i
 		,.sub_chunk_start_i
+		,.sub_chunk_end_o
 
 `ifdef CHANNEL_STACKING
 		,.pri_enc_last_o
@@ -114,7 +114,6 @@ module Compute_Unit #(
 `endif
 		,.fil_data_o(fil_data_w)
 		,.data_valid_o(data_valid_w)
-		,.sub_chunk_end_o
 	);
 
 	MAC u_MAC (

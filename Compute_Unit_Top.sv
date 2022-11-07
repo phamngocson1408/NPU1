@@ -47,7 +47,6 @@ module Compute_Unit_Top #(
 	,input fil_chunk_rd_sel_i
 
 	,input run_valid_i
-	,input sub_chunk_start_i
 
 `ifdef CHANNEL_STACKING
 	,input inner_loop_start_i
@@ -58,12 +57,13 @@ module Compute_Unit_Top #(
 	,input [31:0] sub_channel_size_i 
 	,output logic inner_loop_finish_o
 	,output logic [$clog2(`PREFIX_SUM_SIZE)-1:0] sparsemap_shift_left_o
-`endif
+`elsif CHANNEL_PADDING
+	,input sub_chunk_start_i
 	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_fil_sparsemap_last_i
-
+	,input [$clog2(`OUTPUT_BUF_NUM)-1:0] acc_buf_sel_i
+`endif
 	,output sub_chunk_end_o
 
-	,input [$clog2(`OUTPUT_BUF_NUM)-1:0] acc_buf_sel_i
 	,output [`OUTPUT_BUF_SIZE-1:0] out_buf_dat_o
 );
 
@@ -79,6 +79,7 @@ module Compute_Unit_Top #(
 	logic [$clog2(`PREFIX_SUM_SIZE)-1:0] sparsemap_shift_left_w;
 	logic [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_ifm_sparsemap_next_w;
 	logic [$clog2(`OUTPUT_BUF_NUM)-1:0] acc_buf_sel_w;
+	logic sub_chunk_start_w;
 `endif
 
 	Compute_Unit u_Compute_Unit (
@@ -107,9 +108,9 @@ module Compute_Unit_Top #(
 		,.fil_chunk_rd_sel_i
 		
 		,.run_valid_i
-		,.sub_chunk_start_i
 
 `ifdef CHANNEL_STACKING
+		,.sub_chunk_start_i (sub_chunk_start_w)
 		,.pri_enc_last_o()
 		,.sparsemap_shift_left_i	(sparsemap_shift_left_o)
 		,.rd_ifm_sparsemap_first_i	(rd_ifm_sparsemap_first_w)
@@ -118,9 +119,9 @@ module Compute_Unit_Top #(
 		,.rd_fil_nonzero_dat_first_i	(rd_fil_nonzero_dat_first_w)
 		,.rd_fil_sparsemap_last_i	(rd_fil_sparsemap_last_w)
 `elsif CHANNEL_PADDING
+		,.sub_chunk_start_i
 		,.rd_fil_sparsemap_last_i
 `endif
-
 		,.sub_chunk_end_o
 		
 		,.acc_dat_i(acc_dat_i_w)
@@ -165,6 +166,7 @@ Stacking_Inner_Loop u_Stacking_Inner_Loop(
 		,.rd_ifm_sparsemap_next_o	(rd_ifm_sparsemap_next_w)
 		,.acc_buf_sel_o			(acc_buf_sel_w)
 		,.inner_loop_finish_o
+		,.sub_chunk_start_o		(sub_chunk_start_w)
 	);
 `endif
 	
