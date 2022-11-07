@@ -30,6 +30,7 @@ module Compute_Cluster_Mem #(
 	,input ifm_chunk_wr_sel_i
 	,input ifm_chunk_rd_sel_i
 	,input [$clog2(`SRAM_IFM_NUM)-1:0] ifm_sram_rd_count_i
+	,input [1:0] ifm_chunk_rdy_i
 
 	,input fil_chunk_wr_valid_i
 	,input [$clog2(`WR_DAT_CYC_NUM)-1:0] fil_chunk_wr_count_i
@@ -86,6 +87,7 @@ Compute_Cluster u_Compute_Cluster (
 	,.ifm_chunk_wr_count_i
 	,.ifm_chunk_wr_sel_i
 	,.ifm_chunk_rd_sel_i
+	,.ifm_chunk_rdy_i
 
 	,.fil_sparsemap_i(fil_rd_sparsemap_o_w)
 	,.fil_nonzero_data_i(fil_rd_nonzero_data_o_w)

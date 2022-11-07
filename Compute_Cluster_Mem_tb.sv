@@ -33,6 +33,7 @@ logic [$clog2(`WR_DAT_CYC_NUM)-1:0] ifm_chunk_wr_count_i ;
 logic ifm_chunk_wr_sel_i;
 logic ifm_chunk_rd_sel_i;
 logic [$clog2(`SRAM_IFM_NUM)-1:0] ifm_sram_rd_count_i;
+logic [1:0] ifm_chunk_rdy_i;
 
 logic fil_chunk_wr_valid_i;
 logic [$clog2(`WR_DAT_CYC_NUM)-1:0] fil_chunk_wr_count_i ;
@@ -85,6 +86,7 @@ Compute_Cluster_Mem u_Compute_Cluster_Mem (
 	,.ifm_chunk_wr_sel_i
 	,.ifm_chunk_rd_sel_i
 	,.ifm_sram_rd_count_i
+	,.ifm_chunk_rdy_i
 
 	,.fil_chunk_wr_valid_i
 	,.fil_chunk_wr_count_i
@@ -162,13 +164,17 @@ task wr_ifm_chunk(int ifm_chunk_dat_wr_cyc_num);
 	ifm_chunk_wr_valid_i = 1;
 	ifm_chunk_wr_count_i = 0;
 	ifm_chunk_wr_sel_i = ~ifm_chunk_wr_sel_i;
+`ifdef CHANNEL_PADDING
 	ifm_chunk_rd_sel_i = ~ifm_chunk_rd_sel_i;
+`endif
+	ifm_chunk_rdy_i[ifm_chunk_wr_sel_i] = 0;
 	repeat (ifm_chunk_dat_wr_cyc_num) begin
 		@(posedge clk_i) #1;
 		ifm_chunk_wr_count_i += 1;
 		total_ifm_dat_rd_num_r += `BUS_SIZE;
 	end
 	ifm_chunk_wr_valid_i = 0;
+	ifm_chunk_rdy_i[ifm_chunk_wr_sel_i] = 1;
 endtask
 
 task wr_fil_chunk(int fil_chunk_dat_wr_cyc_num);

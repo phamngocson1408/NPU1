@@ -24,6 +24,7 @@ module Compute_Unit_Top #(
 )(
 	 input rst_i
 	,input clk_i
+	,input [1:0] ifm_chunk_rdy_i
 
 `ifdef COMB_DAT_CHUNK
 	,output [$clog2(`CHUNK_SIZE):0] rd_addr_o
@@ -57,6 +58,7 @@ module Compute_Unit_Top #(
 	,input [31:0] sub_channel_size_i 
 	,output logic inner_loop_finish_o
 	,output logic [$clog2(`PREFIX_SUM_SIZE)-1:0] sparsemap_shift_left_o
+	,output ifm_chunk_rd_sel_o
 `elsif CHANNEL_PADDING
 	,input sub_chunk_start_i
 	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_fil_sparsemap_last_i
@@ -156,6 +158,7 @@ Stacking_Inner_Loop u_Stacking_Inner_Loop(
 		,.fil_loop_y_idx_last_i	
 		,.fil_loop_y_step_i	
 		,.sub_channel_size_i	
+		,.ifm_chunk_rdy_i
 		
 		
 		,.rd_fil_sparsemap_first_o	(rd_fil_sparsemap_first_w)
@@ -167,6 +170,7 @@ Stacking_Inner_Loop u_Stacking_Inner_Loop(
 		,.acc_buf_sel_o			(acc_buf_sel_w)
 		,.inner_loop_finish_o
 		,.sub_chunk_start_o		(sub_chunk_start_w)
+		,.ifm_chunk_rd_sel_o
 	);
 `endif
 	

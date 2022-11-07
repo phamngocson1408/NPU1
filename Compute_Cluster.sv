@@ -31,6 +31,7 @@ module Compute_Cluster #(
 	,input [$clog2(`WR_DAT_CYC_NUM)-1:0] ifm_chunk_wr_count_i
 	,input ifm_chunk_wr_sel_i
 	,input ifm_chunk_rd_sel_i
+	,input [1:0] ifm_chunk_rdy_i
 
 	,input [`BUS_SIZE-1:0] fil_sparsemap_i
 	,input [`BUS_SIZE*8-1:0] fil_nonzero_data_i
@@ -76,6 +77,7 @@ module Compute_Cluster #(
 	logic [`COMPUTE_UNIT_NUM-1:0] pri_enc_last_w;
 	logic [$clog2(`PREFIX_SUM_SIZE)-1:0] sparsemap_shift_left_w;
 	logic [`COMPUTE_UNIT_NUM-1:0] inner_loop_finish_w;
+	logic [`COMPUTE_UNIT_NUM-1:0] ifm_chunk_rd_sel_w;
 `endif
 
 	genvar i;
@@ -83,6 +85,7 @@ module Compute_Cluster #(
 		Compute_Unit_Top u_Compute_Unit_Top (
 			 .rst_i
 			,.clk_i
+			,.ifm_chunk_rdy_i
 
 `ifdef COMB_DAT_CHUNK
 			,.rd_addr_o(rd_addr_w[i])
@@ -115,6 +118,7 @@ module Compute_Cluster #(
 			,.sub_channel_size_i	
 			,.inner_loop_finish_o	(inner_loop_finish_w[i])
 			,.sparsemap_shift_left_o(sparsemap_shift_left_w)
+			,.ifm_chunk_rd_sel_o	(ifm_chunk_rd_sel_w[i])
 `elsif CHANNEL_PADDING
 			,.sub_chunk_start_i(total_chunk_start_i)
 			,.rd_fil_sparsemap_last_i
@@ -131,7 +135,21 @@ module Compute_Cluster #(
 	end
 
 `ifdef CHANNEL_STACKING
-	assign total_inner_loop_finish_o = &inner_loop_finish_w;
+	logic [`COMPUTE_UNIT_NUM-1:0] inner_loop_finish_r;
+	always_ff @(posedge clk_i) begin
+		if (rst_i)
+			inner_loop_finish_r <= {`COMPUTE_UNIT_NUM{1'b0}};
+		else if (inner_loop_start_i)
+			inner_loop_finish_r <= {`COMPUTE_UNIT_NUM{1'b0}};
+		else begin
+			for (int i = 0; i < `COMPUTE_UNIT_NUM; i += 1) begin
+				if ((!inner_loop_finish_r[i]) && inner_loop_finish_w[i])
+					inner_loop_finish_r[i] <= 1'b1;
+			end
+		end
+
+	end
+	assign total_inner_loop_finish_o = &inner_loop_finish_r;
 `endif
 
 	assign total_chunk_end_o = &chunk_end_w;
@@ -148,7 +166,7 @@ module Compute_Cluster #(
   		,.wr_valid_i(ifm_chunk_wr_valid_i)
   		,.wr_count_i(ifm_chunk_wr_count_i)
   		,.wr_sel_i(ifm_chunk_wr_sel_i)
-  		,.rd_sel_i(ifm_chunk_rd_sel_i)
+  		,.rd_sel_i(ifm_chunk_rd_sel_w)
   
   		,.sparsemap_shift_left_i(sparsemap_shift_left_w)
   
