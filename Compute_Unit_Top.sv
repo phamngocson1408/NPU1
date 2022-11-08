@@ -50,10 +50,7 @@ module Compute_Unit_Top #(
 	,input run_valid_i
 
 `ifdef CHANNEL_STACKING
-	,input inner_loop_start_i
-	,input [31:0] ifm_loop_y_idx_i
-	,input [31:0] fil_loop_y_idx_start_i 
-	,input [31:0] fil_loop_y_idx_last_i 
+	,input loop_z_idx_start_i
 	,input [31:0] fil_loop_y_step_i 
 	,input [31:0] sub_channel_size_i 
 	,output logic inner_loop_finish_o
@@ -151,11 +148,8 @@ module Compute_Unit_Top #(
 Stacking_Inner_Loop u_Stacking_Inner_Loop(
 		 .clk_i
 
-		,.inner_loop_start_i	
+		,.loop_z_idx_start_i	
 		,.sub_chunk_end_i	(sub_chunk_end_o)
-		,.ifm_loop_y_idx_i
-		,.fil_loop_y_idx_start_i
-		,.fil_loop_y_idx_last_i	
 		,.fil_loop_y_step_i	
 		,.sub_channel_size_i	
 		,.ifm_chunk_rdy_i

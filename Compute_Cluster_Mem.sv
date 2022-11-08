@@ -42,10 +42,7 @@ module Compute_Cluster_Mem #(
 	,input run_valid_i
 
 `ifdef CHANNEL_STACKING
-	,input inner_loop_start_i
-	,input [31:0] ifm_loop_y_idx_i
-	,input [31:0] fil_loop_y_idx_start_i 
-	,input [31:0] fil_loop_y_idx_last_i 
+	,input loop_z_idx_start_i
 	,input [31:0] fil_loop_y_step_i 
 	,input [31:0] sub_channel_size_i 
 	,output logic total_inner_loop_finish_o
@@ -100,10 +97,7 @@ Compute_Cluster u_Compute_Cluster (
 	,.run_valid_i
 
 `ifdef CHANNEL_STACKING
-	,.inner_loop_start_i	
-	,.ifm_loop_y_idx_i
-	,.fil_loop_y_idx_start_i
-	,.fil_loop_y_idx_last_i	
+	,.loop_z_idx_start_i	
 	,.fil_loop_y_step_i	
 	,.sub_channel_size_i	
 	,.total_inner_loop_finish_o

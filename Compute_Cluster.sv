@@ -44,10 +44,7 @@ module Compute_Cluster #(
 	,input run_valid_i
 
 `ifdef CHANNEL_STACKING
-	,input inner_loop_start_i
-	,input [31:0] ifm_loop_y_idx_i
-	,input [31:0] fil_loop_y_idx_start_i 
-	,input [31:0] fil_loop_y_idx_last_i 
+	,input loop_z_idx_start_i
 	,input [31:0] fil_loop_y_step_i 
 	,input [31:0] sub_channel_size_i 
 	,output logic total_inner_loop_finish_o
@@ -110,10 +107,7 @@ module Compute_Cluster #(
 			,.run_valid_i
 
 `ifdef CHANNEL_STACKING
-			,.inner_loop_start_i	
-			,.ifm_loop_y_idx_i
-			,.fil_loop_y_idx_start_i
-			,.fil_loop_y_idx_last_i	
+			,.loop_z_idx_start_i	
 			,.fil_loop_y_step_i	
 			,.sub_channel_size_i	
 			,.inner_loop_finish_o	(inner_loop_finish_w[i])
@@ -139,7 +133,7 @@ module Compute_Cluster #(
 	always_ff @(posedge clk_i) begin
 		if (rst_i)
 			inner_loop_finish_r <= {`COMPUTE_UNIT_NUM{1'b0}};
-		else if (inner_loop_start_i)
+		else if (total_inner_loop_finish_o)
 			inner_loop_finish_r <= {`COMPUTE_UNIT_NUM{1'b0}};
 		else begin
 			for (int i = 0; i < `COMPUTE_UNIT_NUM; i += 1) begin
