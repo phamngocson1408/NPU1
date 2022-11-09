@@ -30,9 +30,9 @@ module IFM_Dat_Chunk_Comb_Stacking #(
 	,input wr_valid_i
 	,input [$clog2(`WR_DAT_CYC_NUM)-1:0] wr_count_i
 	,input wr_sel_i
-	,input [`COMPUTE_UNIT_NUM-1:0] rd_sel_i
+	,input rd_sel_i
 
-	,input [$clog2(`PREFIX_SUM_SIZE)-1:0] sparsemap_shift_left_i
+	,input [`COMPUTE_UNIT_NUM-1:0][$clog2(`PREFIX_SUM_SIZE)-1:0] sparsemap_shift_left_i
 
 	,input [`COMPUTE_UNIT_NUM-1:0][$clog2(`CHUNK_SIZE):0] rd_addr_i
 	,output logic [`COMPUTE_UNIT_NUM-1:0][7:0] rd_data_o
@@ -87,7 +87,7 @@ module IFM_Dat_Chunk_Comb_Stacking #(
 
 	always_comb begin
 		for (integer i=0; i<`COMPUTE_UNIT_NUM; i=i+1) begin
-			if (rd_sel_i[i])
+			if (rd_sel_i)
 				rd_sparsemap_o_comb_w[i] = rd_sparsemap_o_w[1][i];
 			else
 				rd_sparsemap_o_comb_w[i] = rd_sparsemap_o_w[0][i];
@@ -96,7 +96,7 @@ module IFM_Dat_Chunk_Comb_Stacking #(
 
 	always_comb begin
 		for (integer i=0; i<`COMPUTE_UNIT_NUM; i=i+1) begin
-			rd_sparsemap_o_shift_w[i] = rd_sparsemap_o_comb_w[i] << sparsemap_shift_left_i;
+			rd_sparsemap_o_shift_w[i] = rd_sparsemap_o_comb_w[i] << sparsemap_shift_left_i[i];
 
 			rd_sparsemap_o[i] = rd_sparsemap_o_shift_w[i][`PREFIX_SUM_SIZE-1:0];
 		end
@@ -113,7 +113,7 @@ module IFM_Dat_Chunk_Comb_Stacking #(
 
 	always_comb begin
 		for (integer i=0; i<`COMPUTE_UNIT_NUM; i=i+1) begin
-			if (rd_sel_i[i])
+			if (rd_sel_i)
 				rd_data_o[i] = rd_data_w[1][i];
 			else
 				rd_data_o[i] = rd_data_w[0][i];

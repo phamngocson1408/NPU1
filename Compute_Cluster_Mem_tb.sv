@@ -7,6 +7,7 @@
 module Compute_Cluster_Mem_tb(
     );
 
+/*******************************************************************************************************/
 //CLock generate
 reg clk_i;
 initial begin
@@ -27,6 +28,7 @@ initial begin
 	rst_i = 0;
 end
 
+/*******************************************************************************************************/
 //DUT instance
 logic ifm_chunk_wr_valid_i;
 logic [$clog2(`WR_DAT_CYC_NUM)-1:0] ifm_chunk_wr_count_i ;
@@ -47,9 +49,8 @@ logic run_valid_i;
 logic total_chunk_start_i;
 logic [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_fil_sparsemap_last_i;
 logic [$clog2(`OUTPUT_BUF_NUM)-1:0] acc_buf_sel_i;
-`endif
-
 logic total_chunk_end_o;
+`endif
 
 logic [$clog2(`COMPUTE_UNIT_NUM)-1:0] com_unit_out_buf_sel_i = 0;
 logic [`OUTPUT_BUF_SIZE-1:0] out_buf_dat_o;
@@ -67,7 +68,9 @@ logic [$clog2(`WR_DAT_CYC_NUM)-1:0]	fil_sram_wr_dat_count_w;
 logic [$clog2(`SRAM_FILTER_NUM)-1:0] 	fil_sram_wr_chunk_count_w;
 
 `ifdef CHANNEL_STACKING
-logic loop_z_idx_start_i;
+logic inner_loop_start_i;
+int fil_loop_y_idx_start;
+int fil_loop_y_idx_last;
 int fil_loop_y_step;
 int sub_channel_size;
 logic total_inner_loop_finish_o;
@@ -93,7 +96,10 @@ Compute_Cluster_Mem u_Compute_Cluster_Mem (
 	,.run_valid_i
 
 `ifdef CHANNEL_STACKING
-	,.loop_z_idx_start_i
+	,.inner_loop_start_i
+	,.ifm_loop_y_idx_i 	(ifm_loop_y_idx)
+	,.fil_loop_y_idx_start_i(fil_loop_y_idx_start)
+	,.fil_loop_y_idx_last_i	(fil_loop_y_idx_last)
 	,.fil_loop_y_step_i	(fil_loop_y_step)	
 	,.sub_channel_size_i	(sub_channel_size)	
 	,.total_inner_loop_finish_o
@@ -101,9 +107,8 @@ Compute_Cluster_Mem u_Compute_Cluster_Mem (
 	,.total_chunk_start_i
 	,.rd_fil_sparsemap_last_i
 	,.acc_buf_sel_i
-`endif
 	,.total_chunk_end_o
-
+`endif
 	,.com_unit_out_buf_sel_i
 	,.out_buf_dat_o
 
@@ -120,6 +125,8 @@ Compute_Cluster_Mem u_Compute_Cluster_Mem (
 	,.fil_sram_wr_chunk_count_i(fil_sram_wr_chunk_count_w)
 );
 
+
+/*******************************************************************************************************/
 logic mem_gen_start_i;
 logic mem_gen_finish_w;
 
@@ -147,6 +154,7 @@ Mem_Gen_Padding u_Mem_Gen_Padding (
 	,.fil_sram_wr_chunk_count_o(fil_sram_wr_chunk_count_w)
 );
 
+/*******************************************************************************************************/
 logic [31:0] total_ifm_dat_rd_num_r = 0;
 logic [31:0] total_fil_dat_rd_num_r = 0;
 logic [31:0] total_dat_rd_num_r;
@@ -156,13 +164,11 @@ task wr_ifm_chunk(int ifm_chunk_dat_wr_cyc_num);
 	ifm_chunk_wr_valid_i = 1;
 	ifm_chunk_wr_count_i = 0;
 	ifm_chunk_wr_sel_i = ~ifm_chunk_wr_sel_i;
-`ifdef CHANNEL_PADDING
 	ifm_chunk_rd_sel_i = ~ifm_chunk_rd_sel_i;
-`endif
 	repeat (ifm_chunk_dat_wr_cyc_num) begin
 		@(posedge clk_i) #1;
 		ifm_chunk_wr_count_i += 1;
-		total_ifm_dat_rd_num_r += `BUS_SIZE;
+		total_ifm_dat_rd_num_r += (`BUS_SIZE + 1);
 	end
 	ifm_chunk_wr_valid_i = 0;
 endtask
@@ -183,25 +189,15 @@ task wr_fil_chunk(int fil_chunk_dat_wr_cyc_num);
 		repeat (fil_chunk_dat_wr_cyc_num) begin
 			@(posedge clk_i) #1;
 			fil_chunk_wr_count_i += 1;
-			total_fil_dat_rd_num_r += `BUS_SIZE;
+			total_fil_dat_rd_num_r += (`BUS_SIZE + 1);
 		end
 	end
 	fil_chunk_wr_valid_i = 0;
 endtask
 
-event sub_chunk_end_event;
 
-initial begin
-forever begin
-	@(posedge clk_i);
-	if (total_chunk_end_o) begin
-	//	#1;
-		-> sub_chunk_end_event;
-	end
-end
-end
-
-// Initiate
+/*******************************************************************************************************/
+// Channel stacking
 `ifdef CHANNEL_STACKING
 localparam int SIM_LOOP_Z_NUM = (`LAYER_CHANNEL_NUM % `DIVIDED_CHANNEL_NUM) ? (`LAYER_CHANNEL_NUM / `DIVIDED_CHANNEL_NUM) + 1 : (`LAYER_CHANNEL_NUM / `DIVIDED_CHANNEL_NUM);
 localparam int SIM_LAST_CHANNEL_SIZE = (`LAYER_CHANNEL_NUM % `DIVIDED_CHANNEL_NUM) ? (`LAYER_CHANNEL_NUM % `DIVIDED_CHANNEL_NUM) : `DIVIDED_CHANNEL_NUM;
@@ -281,14 +277,6 @@ initial begin
 			wr_fil_chunk(fil_chunk_dat_wr_cyc_num);
 		end join_none
 
-		loop_z_idx_start_i = 1;
-		fork
-		begin
-			@ (posedge clk_i);
-			loop_z_idx_start_i = 0;
-		end
-		join_none
-
 		for (ifm_loop_y_idx = 0; ifm_loop_y_idx < ifm_loop_y_num; ifm_loop_y_idx += 1) begin
 			fork begin
 					ifm_sram_rd_count_i =  loop_z_idx * `LAYER_IFM_SIZE_Y + ifm_loop_y_idx + 1;
@@ -297,6 +285,27 @@ initial begin
 					wr_ifm_chunk(ifm_chunk_dat_wr_cyc_num);
 			end join_none
 
+			if (ifm_loop_y_idx < `LAYER_FILTER_SIZE_Y) begin
+				fil_loop_y_idx_start = 0;
+				fil_loop_y_idx_last = ifm_loop_y_idx;
+			end
+			else if ((`LAYER_FILTER_SIZE_Y <= ifm_loop_y_idx) && (ifm_loop_y_idx <= `LAYER_IFM_SIZE_Y - `LAYER_FILTER_SIZE_Y)) begin
+				fil_loop_y_idx_start = 0;
+				fil_loop_y_idx_last = `LAYER_FILTER_SIZE_Y-1;
+			end
+			else begin
+				fil_loop_y_idx_start = `LAYER_FILTER_SIZE_Y - 1 - ((`LAYER_IFM_SIZE_Y - 1) - ifm_loop_y_idx);
+				fil_loop_y_idx_last = `LAYER_FILTER_SIZE_Y - 1;
+			end
+
+			inner_loop_start_i = 1;
+			fork
+			begin
+				@ (posedge clk_i);
+				inner_loop_start_i = 0;
+			end
+			join_none
+
 			@ (posedge total_inner_loop_finish_o);
 			@ (posedge clk_i);
 		end
@@ -304,7 +313,19 @@ initial begin
 	$finish();
 end
 
+/*******************************************************************************************************/
 `elsif CHANNEL_PADDING
+event sub_chunk_end_event;
+
+initial begin
+forever begin
+	@(posedge clk_i);
+	if (total_chunk_end_o) begin
+		-> sub_chunk_end_event;
+	end
+end
+end
+
 localparam int SIM_LOOP_Z_NUM = (`LAYER_CHANNEL_NUM % `SIM_CHUNK_SIZE) ? (`LAYER_CHANNEL_NUM / `SIM_CHUNK_SIZE) + 1 
 							: (`LAYER_CHANNEL_NUM / `SIM_CHUNK_SIZE);
 int chunk_dat_size;
@@ -384,7 +405,6 @@ initial begin
 	end
 	$finish();
 end
-`endif
 
 //Generate the total chunk start signal
 logic run_valid_delay_r;
@@ -405,7 +425,6 @@ always_ff @(posedge clk_i) begin
 		total_chunk_start_r <= 1'b0;
 end
 
-`ifdef CHANNEL_PADDING
 assign total_chunk_start_i = run_valid_i && (total_chunk_start_r || (run_valid_i && (!run_valid_delay_r)));
 `endif
 

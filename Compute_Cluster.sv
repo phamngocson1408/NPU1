@@ -44,7 +44,10 @@ module Compute_Cluster #(
 	,input run_valid_i
 
 `ifdef CHANNEL_STACKING
-	,input loop_z_idx_start_i
+	,input inner_loop_start_i
+	,input [31:0] ifm_loop_y_idx_i 
+	,input [31:0] fil_loop_y_idx_start_i 
+	,input [31:0] fil_loop_y_idx_last_i 
 	,input [31:0] fil_loop_y_step_i 
 	,input [31:0] sub_channel_size_i 
 	,output logic total_inner_loop_finish_o
@@ -52,15 +55,13 @@ module Compute_Cluster #(
 	,input total_chunk_start_i
 	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_fil_sparsemap_last_i
 	,input [$clog2(`OUTPUT_BUF_NUM)-1:0] acc_buf_sel_i
-`endif
 	,output total_chunk_end_o
-
+`endif
 	,input [$clog2(`COMPUTE_UNIT_NUM)-1:0] com_unit_out_buf_sel_i
 	,output [`OUTPUT_BUF_SIZE-1:0] out_buf_dat_o
 );
 
 	logic [`COMPUTE_UNIT_NUM-1:0] fil_wr_valid_w;
-	logic [`COMPUTE_UNIT_NUM-1:0] chunk_end_w;
 	logic [`COMPUTE_UNIT_NUM-1:0][`OUTPUT_BUF_SIZE-1:0] out_buf_dat_w;
 
 `ifdef COMB_DAT_CHUNK
@@ -72,9 +73,10 @@ module Compute_Cluster #(
 
 `ifdef CHANNEL_STACKING
 	logic [`COMPUTE_UNIT_NUM-1:0] pri_enc_last_w;
-	logic [$clog2(`PREFIX_SUM_SIZE)-1:0] sparsemap_shift_left_w;
+	logic [`COMPUTE_UNIT_NUM-1:0][$clog2(`PREFIX_SUM_SIZE)-1:0] sparsemap_shift_left_w;
 	logic [`COMPUTE_UNIT_NUM-1:0] inner_loop_finish_w;
-	logic [`COMPUTE_UNIT_NUM-1:0] ifm_chunk_rd_sel_w;
+`elsif CHANNEL_PADDING
+	logic [`COMPUTE_UNIT_NUM-1:0] chunk_end_w;
 `endif
 
 	genvar i;
@@ -82,7 +84,6 @@ module Compute_Cluster #(
 		Compute_Unit_Top u_Compute_Unit_Top (
 			 .rst_i
 			,.clk_i
-			,.ifm_chunk_rdy_i
 
 `ifdef COMB_DAT_CHUNK
 			,.rd_addr_o(rd_addr_w[i])
@@ -107,18 +108,20 @@ module Compute_Cluster #(
 			,.run_valid_i
 
 `ifdef CHANNEL_STACKING
-			,.loop_z_idx_start_i	
+			,.inner_loop_start_i	
+			,.ifm_loop_y_idx_i
+			,.fil_loop_y_idx_start_i
+			,.fil_loop_y_idx_last_i
 			,.fil_loop_y_step_i	
 			,.sub_channel_size_i	
 			,.inner_loop_finish_o	(inner_loop_finish_w[i])
-			,.sparsemap_shift_left_o(sparsemap_shift_left_w)
-			,.ifm_chunk_rd_sel_o	(ifm_chunk_rd_sel_w[i])
+			,.sparsemap_shift_left_o(sparsemap_shift_left_w[i])
 `elsif CHANNEL_PADDING
 			,.sub_chunk_start_i(total_chunk_start_i)
 			,.rd_fil_sparsemap_last_i
 			,.acc_buf_sel_i
-`endif
 			,.sub_chunk_end_o(chunk_end_w[i])
+`endif
 
 			,.out_buf_dat_o(out_buf_dat_w[i])
 		);
@@ -144,9 +147,9 @@ module Compute_Cluster #(
 
 	end
 	assign total_inner_loop_finish_o = &inner_loop_finish_r;
-`endif
-
+`elsif CHANNEL_PADDING
 	assign total_chunk_end_o = &chunk_end_w;
+`endif
 	assign out_buf_dat_o = out_buf_dat_w[com_unit_out_buf_sel_i];
 
 `ifdef COMB_DAT_CHUNK
@@ -160,7 +163,7 @@ module Compute_Cluster #(
   		,.wr_valid_i(ifm_chunk_wr_valid_i)
   		,.wr_count_i(ifm_chunk_wr_count_i)
   		,.wr_sel_i(ifm_chunk_wr_sel_i)
-  		,.rd_sel_i(ifm_chunk_rd_sel_w)
+  		,.rd_sel_i(ifm_chunk_rd_sel_i)
   
   		,.sparsemap_shift_left_i(sparsemap_shift_left_w)
   

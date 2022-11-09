@@ -24,7 +24,6 @@ module Compute_Unit_Top #(
 )(
 	 input rst_i
 	,input clk_i
-	,input [1:0] ifm_chunk_rdy_i
 
 `ifdef COMB_DAT_CHUNK
 	,output [$clog2(`CHUNK_SIZE):0] rd_addr_o
@@ -50,19 +49,20 @@ module Compute_Unit_Top #(
 	,input run_valid_i
 
 `ifdef CHANNEL_STACKING
-	,input loop_z_idx_start_i
+	,input inner_loop_start_i
+	,input [31:0] ifm_loop_y_idx_i 
+	,input [31:0] fil_loop_y_idx_start_i 
+	,input [31:0] fil_loop_y_idx_last_i 
 	,input [31:0] fil_loop_y_step_i 
 	,input [31:0] sub_channel_size_i 
 	,output logic inner_loop_finish_o
 	,output logic [$clog2(`PREFIX_SUM_SIZE)-1:0] sparsemap_shift_left_o
-	,output ifm_chunk_rd_sel_o
 `elsif CHANNEL_PADDING
 	,input sub_chunk_start_i
 	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_fil_sparsemap_last_i
 	,input [$clog2(`OUTPUT_BUF_NUM)-1:0] acc_buf_sel_i
-`endif
 	,output sub_chunk_end_o
-
+`endif
 	,output [`OUTPUT_BUF_SIZE-1:0] out_buf_dat_o
 );
 
@@ -79,6 +79,7 @@ module Compute_Unit_Top #(
 	logic [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_ifm_sparsemap_next_w;
 	logic [$clog2(`OUTPUT_BUF_NUM)-1:0] acc_buf_sel_w;
 	logic sub_chunk_start_w;
+	logic sub_chunk_end_w;
 `endif
 
 	Compute_Unit u_Compute_Unit (
@@ -117,12 +118,12 @@ module Compute_Unit_Top #(
 		,.rd_fil_sparsemap_first_i	(rd_fil_sparsemap_first_w)
 		,.rd_fil_nonzero_dat_first_i	(rd_fil_nonzero_dat_first_w)
 		,.rd_fil_sparsemap_last_i	(rd_fil_sparsemap_last_w)
+		,.sub_chunk_end_o		(sub_chunk_end_w)
 `elsif CHANNEL_PADDING
 		,.sub_chunk_start_i
 		,.rd_fil_sparsemap_last_i
-`endif
 		,.sub_chunk_end_o
-		
+`endif
 		,.acc_dat_i(acc_dat_i_w)
 		,.acc_val_o(acc_val_o_w)
 		,.acc_dat_o(acc_dat_o_w)
@@ -148,12 +149,13 @@ module Compute_Unit_Top #(
 Stacking_Inner_Loop u_Stacking_Inner_Loop(
 		 .clk_i
 
-		,.loop_z_idx_start_i	
-		,.sub_chunk_end_i	(sub_chunk_end_o)
+		,.inner_loop_start_i	
+		,.sub_chunk_end_i		(sub_chunk_end_w)
+		,.ifm_loop_y_idx_i
+		,.fil_loop_y_idx_start_i
+		,.fil_loop_y_idx_last_i
 		,.fil_loop_y_step_i	
 		,.sub_channel_size_i	
-		,.ifm_chunk_rdy_i
-		
 		
 		,.rd_fil_sparsemap_first_o	(rd_fil_sparsemap_first_w)
 		,.rd_fil_sparsemap_last_o	(rd_fil_sparsemap_last_w)
@@ -164,7 +166,6 @@ Stacking_Inner_Loop u_Stacking_Inner_Loop(
 		,.acc_buf_sel_o			(acc_buf_sel_w)
 		,.inner_loop_finish_o
 		,.sub_chunk_start_o		(sub_chunk_start_w)
-		,.ifm_chunk_rd_sel_o
 	);
 `endif
 	
