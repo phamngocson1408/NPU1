@@ -95,6 +95,7 @@ module IFM_Input_Sel #(
 	assign rd_addr_o = rd_dat_base_addr_w + rd_dat_addr_temp_w;
 `elsif CHANNEL_PADDING
 	logic gated_clk_lat;
+	logic [$clog2(`CHUNK_SIZE):0] rd_dat_base_addr_w;	
 	always_latch begin
 		if (!clk_i) begin
 			gated_clk_lat <= (rst_i || sub_chunk_start_i || pri_enc_end_i);
@@ -113,8 +114,9 @@ module IFM_Input_Sel #(
 		end
 	end
 
+	assign rd_dat_base_addr_w = sub_chunk_start_i ? {($clog2(`CHUNK_SIZE) + 1){1'b0}} : rd_dat_base_addr_r;
 	assign rd_dat_addr_temp_w = prefix_sum_out_w[pri_enc_match_addr_i];
-	assign rd_addr_o = rd_dat_base_addr_r + rd_dat_addr_temp_w;
+	assign rd_addr_o = rd_dat_base_addr_w + rd_dat_addr_temp_w;
 `endif
 
 

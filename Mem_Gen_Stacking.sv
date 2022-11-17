@@ -45,12 +45,12 @@ module Mem_Gen_Stacking #(
 logic [`SIM_CHUNK_SIZE-1:0][`DAT_SIZE-1:0] ifm_sram_non_zero_data_r = {`SIM_CHUNK_SIZE{`DAT_SIZE{1'b0}}};
 logic [`SIM_CHUNK_SIZE-1:0] ifm_sram_sparse_map_r;
 
-task automatic gen_ifm_buf(int chunk_dat_size);
+task automatic gen_ifm_buf(int chunk_dat_size, int chunk_size);
 	int j=0;
 	int data;
 	int valid_dat;
 
-	for (int i=0; i<`SIM_CHUNK_SIZE; i=i+1) begin
+	for (int i=0; i<chunk_size; i=i+1) begin
  		if (i < chunk_dat_size) begin
  			data = $urandom_range(256,1);
  			valid_dat = $urandom_range(100,0);
@@ -118,7 +118,7 @@ int ifm_chunk_dat_size;
 int ifm_chunk_dat_wr_cyc_num;
 
 initial begin
-	@(posedge mem_gen_start_i) #1;	
+	@(posedge Compute_Cluster_Mem_tb.mem_gen_start_i) #1;	
 	fork
 		// Gen fil
 		begin
@@ -162,7 +162,7 @@ initial begin
 
 				for (int ifm_loop_y_idx = 0; ifm_loop_y_idx < `LAYER_IFM_SIZE_Y; ifm_loop_y_idx += 1) begin
 					ifm_sram_wr_chunk_count_o = loop_z_idx * `LAYER_IFM_SIZE_Y + ifm_loop_y_idx;
-					gen_ifm_buf(ifm_chunk_dat_size);
+					gen_ifm_buf(ifm_chunk_dat_size, ifm_chunk_dat_wr_cyc_num * `BUS_SIZE);
 					ifm_sram_wr_dat_count_o = 0;
 					repeat(ifm_chunk_dat_wr_cyc_num) begin
 						ifm_sram_wr_sparsemap_o = ifm_sram_sparse_map_r[`BUS_SIZE*ifm_sram_wr_dat_count_o +: `BUS_SIZE];

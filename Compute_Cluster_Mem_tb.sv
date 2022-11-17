@@ -260,7 +260,7 @@ initial begin
 	join
 
 	// Start execution	
-	@(negedge clk_i) #1;
+//	@(negedge clk_i) #1;
 	run_valid_i = 1'b1;
 
 	for (loop_z_idx = 0; loop_z_idx < SIM_LOOP_Z_NUM; loop_z_idx += 1 ) begin
@@ -301,13 +301,13 @@ initial begin
 			inner_loop_start_i = 1;
 			fork
 			begin
-				@ (posedge clk_i);
+				@ (posedge clk_i) #1;
 				inner_loop_start_i = 0;
 			end
 			join_none
 
 			@ (posedge total_inner_loop_finish_o);
-			@ (posedge clk_i);
+			@ (posedge clk_i) #1;
 		end
 	end
 	$finish();
@@ -321,13 +321,14 @@ initial begin
 forever begin
 	@(posedge clk_i);
 	if (total_chunk_end_o) begin
+		#1;
 		-> sub_chunk_end_event;
 	end
 end
 end
 
-localparam int SIM_LOOP_Z_NUM = (`LAYER_CHANNEL_NUM % `SIM_CHUNK_SIZE) ? (`LAYER_CHANNEL_NUM / `SIM_CHUNK_SIZE) + 1 
-							: (`LAYER_CHANNEL_NUM / `SIM_CHUNK_SIZE);
+localparam int SIM_LOOP_Z_NUM = (`LAYER_CHANNEL_NUM % `SIM_CHUNK_SIZE) ? (`LAYER_CHANNEL_NUM / `SIM_CHUNK_SIZE) + 1 : (`LAYER_CHANNEL_NUM / `SIM_CHUNK_SIZE);
+localparam int SIM_LAST_CHANNEL_SIZE = (`LAYER_CHANNEL_NUM % `SIM_CHUNK_SIZE) ? (`LAYER_CHANNEL_NUM % `SIM_CHUNK_SIZE) : `SIM_CHUNK_SIZE;
 int chunk_dat_size;
 int chunk_dat_wr_cyc_num;
 assign	rd_fil_sparsemap_last_i =  chunk_dat_wr_cyc_num - 1;
@@ -360,7 +361,7 @@ initial begin
 
 	// Read mem to chunks
 	if (SIM_LOOP_Z_NUM == 1)
-		chunk_dat_size = `LAYER_CHANNEL_NUM % `SIM_CHUNK_SIZE;
+		chunk_dat_size = SIM_LAST_CHANNEL_SIZE;
 	else
 		chunk_dat_size = `SIM_CHUNK_SIZE;
 
@@ -371,12 +372,12 @@ initial begin
 	join
 
 	// Start execution	
-	@(negedge clk_i) #1;
+//	@(posedge clk_i) #1;
 	run_valid_i = 1'b1;
 
 	for (int loop_z_idx = 0; loop_z_idx < SIM_LOOP_Z_NUM; loop_z_idx += 1 ) begin
 		if (loop_z_idx == SIM_LOOP_Z_NUM - 1)
-			chunk_dat_size = `LAYER_CHANNEL_NUM % `SIM_CHUNK_SIZE;
+			chunk_dat_size = SIM_LAST_CHANNEL_SIZE;
 		else
 			chunk_dat_size = `SIM_CHUNK_SIZE;
 

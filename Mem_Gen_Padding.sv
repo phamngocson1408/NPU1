@@ -103,6 +103,7 @@ endtask
 
 int loop_z_num = (`LAYER_CHANNEL_NUM % `SIM_CHUNK_SIZE) ? (`LAYER_CHANNEL_NUM / `SIM_CHUNK_SIZE) + 1 
 		: (`LAYER_CHANNEL_NUM / `SIM_CHUNK_SIZE);
+localparam int SIM_LAST_CHANNEL_SIZE = (`LAYER_CHANNEL_NUM % `SIM_CHUNK_SIZE) ? (`LAYER_CHANNEL_NUM % `SIM_CHUNK_SIZE) : `SIM_CHUNK_SIZE;
 int fil_chunk_dat_size;
 int fil_chunk_dat_wr_cyc_num;
 int ifm_chunk_dat_size;
@@ -117,7 +118,7 @@ initial begin
 			fil_sram_wr_valid_o = 1'b1;
 			for (int fil_z_idx = 0; fil_z_idx < loop_z_num; fil_z_idx += 1) begin
 				if (fil_z_idx == loop_z_num - 1) begin
-					fil_chunk_dat_size = `LAYER_CHANNEL_NUM % `SIM_CHUNK_SIZE;
+					fil_chunk_dat_size = SIM_LAST_CHANNEL_SIZE;
 				end
 				else begin
 					fil_chunk_dat_size = `SIM_CHUNK_SIZE;
@@ -149,7 +150,7 @@ initial begin
 			ifm_sram_wr_valid_o = 1'b1;
 			for (integer ifm_z_idx = 0; ifm_z_idx < loop_z_num; ifm_z_idx += 1) begin
 				if (ifm_z_idx == loop_z_num - 1) begin
-					ifm_chunk_dat_size = `LAYER_CHANNEL_NUM % `SIM_CHUNK_SIZE;
+					ifm_chunk_dat_size = SIM_LAST_CHANNEL_SIZE;
 				end
 				else begin
 					ifm_chunk_dat_size = `SIM_CHUNK_SIZE;
