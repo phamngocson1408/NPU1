@@ -97,7 +97,7 @@ module Input_Selector_v2 #(
  `endif
 	);
 `else
-	Data_Chunk_Top u_Data_Chunk_Top_IFM (
+	Data_Chunk_Top_IFM u_Data_Chunk_Top_IFM (
 		 .clk_i
 		,.rst_i
 		,.wr_sparsemap_i(ifm_sparsemap_i)

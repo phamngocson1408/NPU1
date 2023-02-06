@@ -100,7 +100,6 @@ module Data_Chunk_Top_Filter #(
 `endif
 	);
 
-
 	always_comb begin
 		if (rd_sel_i) begin
 			rd_data_o 		= rd_dat_w[1];

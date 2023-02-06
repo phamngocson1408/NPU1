@@ -20,7 +20,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module Data_Chunk_Top #(
+module Data_Chunk_Top_IFM #(
 )(
 	 input rst_i
 	,input clk_i
@@ -39,16 +39,13 @@ module Data_Chunk_Top #(
 
 	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_sparsemap_addr_i
 	,output logic [`PREFIX_SUM_SIZE-1:0] rd_sparsemap_o
-
-`ifdef CHANNEL_STACKING
-	,input [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_fil_sparsemap_first_i
-`endif
-
 );
 	
 	logic [1:0] wr_val_w;
 	logic [$clog2(`CHUNK_SIZE):0] rd_dat_addr_w;	
+	logic [1:0][$clog2(`CHUNK_SIZE):0] rd_addr_w;	
 	logic [1:0][7:0] rd_dat_w;
+	logic [1:0][$clog2(`RD_DAT_CYC_NUM)-1:0] rd_sparsemap_addr_w;
 	logic [1:0][`PREFIX_SUM_SIZE-1:0] rd_sparsemap_w;
 
 	Data_Chunk u_Data_Chunk_0 (
@@ -59,15 +56,11 @@ module Data_Chunk_Top #(
 		,.wr_valid_i(wr_val_w[0])
 		,.wr_count_i
 
-		,.rd_addr_i(rd_dat_addr_w)
+		,.rd_addr_i(rd_addr_w[0])
 		,.rd_data_o(rd_dat_w[0])
 
-		,.rd_sparsemap_addr_i
+		,.rd_sparsemap_addr_i(rd_sparsemap_addr_w[0])
 		,.rd_sparsemap_o(rd_sparsemap_w[0])
-
-`ifdef CHANNEL_STACKING
-		,.rd_fil_sparsemap_first_i
-`endif
 	);
 
 	Data_Chunk u_Data_Chunk_1 (
@@ -78,15 +71,11 @@ module Data_Chunk_Top #(
 		,.wr_valid_i(wr_val_w[1])
 		,.wr_count_i
 
-		,.rd_addr_i(rd_dat_addr_w)
+		,.rd_addr_i(rd_addr_w[1])
 		,.rd_data_o(rd_dat_w[1])
 
-		,.rd_sparsemap_addr_i
+		,.rd_sparsemap_addr_i(rd_sparsemap_addr_w[1])
 		,.rd_sparsemap_o(rd_sparsemap_w[1])
-
-`ifdef CHANNEL_STACKING
-		,.rd_fil_sparsemap_first_i
-`endif
 	);
 
 	Data_Addr_Cal u_Data_Addr_Cal (
@@ -101,15 +90,22 @@ module Data_Chunk_Top #(
 		,.rd_dat_addr_o(rd_dat_addr_w)
 	);
 
-
 	always_comb begin
 		if (rd_sel_i) begin
 			rd_data_o 		= rd_dat_w[1];
 			rd_sparsemap_o	 	= rd_sparsemap_w[1];
+			rd_addr_w[1]		= rd_dat_addr_w;
+			rd_addr_w[0]		= {($clog2(`CHUNK_SIZE)+1){1'b1}};
+			rd_sparsemap_addr_w[1]	= rd_sparsemap_addr_i;
+			rd_sparsemap_addr_w[0]	= {($clog2(`RD_DAT_CYC_NUM)){1'b0}};
 		end
 		else begin
 			rd_data_o 		= rd_dat_w[0];
 			rd_sparsemap_o	 	= rd_sparsemap_w[0];
+			rd_addr_w[0]		= rd_dat_addr_w;
+			rd_addr_w[1]		= {($clog2(`CHUNK_SIZE)+1){1'b1}};
+			rd_sparsemap_addr_w[0]	= rd_sparsemap_addr_i;
+			rd_sparsemap_addr_w[1]	= {($clog2(`RD_DAT_CYC_NUM)){1'b0}};
 		end
 	end
 
