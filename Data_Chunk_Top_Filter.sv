@@ -49,7 +49,9 @@ module Data_Chunk_Top_Filter #(
 	
 	logic [1:0] wr_val_w;
 	logic [$clog2(`CHUNK_SIZE):0] rd_dat_addr_w;	
+	logic [1:0][$clog2(`CHUNK_SIZE):0] rd_addr_w;	
 	logic [1:0][7:0] rd_dat_w;
+	logic [1:0][$clog2(`RD_DAT_CYC_NUM)-1:0] rd_sparsemap_addr_w;
 	logic [1:0][`PREFIX_SUM_SIZE-1:0] rd_sparsemap_w;
 
 	Data_Chunk u_Data_Chunk_0 (
@@ -60,10 +62,10 @@ module Data_Chunk_Top_Filter #(
 		,.wr_valid_i(wr_val_w[0])
 		,.wr_count_i
 
-		,.rd_addr_i(rd_dat_addr_w)
+		,.rd_addr_i(rd_addr_w[0])
 		,.rd_data_o(rd_dat_w[0])
 
-		,.rd_sparsemap_addr_i
+		,.rd_sparsemap_addr_i(rd_sparsemap_addr_w[0])
 		,.rd_sparsemap_o(rd_sparsemap_w[0])
 	);
 
@@ -75,10 +77,10 @@ module Data_Chunk_Top_Filter #(
 		,.wr_valid_i(wr_val_w[1])
 		,.wr_count_i
 
-		,.rd_addr_i(rd_dat_addr_w)
+		,.rd_addr_i(rd_addr_w[1])
 		,.rd_data_o(rd_dat_w[1])
 
-		,.rd_sparsemap_addr_i
+		,.rd_sparsemap_addr_i(rd_sparsemap_addr_w[1])
 		,.rd_sparsemap_o(rd_sparsemap_w[1])
 	);
 
@@ -103,10 +105,18 @@ module Data_Chunk_Top_Filter #(
 		if (rd_sel_i) begin
 			rd_data_o 		= rd_dat_w[1];
 			rd_sparsemap_o	 	= rd_sparsemap_w[1];
+			rd_addr_w[1]		= rd_dat_addr_w;
+			rd_addr_w[0]		= {($clog2(`CHUNK_SIZE)+1){1'b0}};
+			rd_sparsemap_addr_w[1]	= rd_sparsemap_addr_i;
+			rd_sparsemap_addr_w[0]	= {($clog2(`RD_DAT_CYC_NUM)){1'b0}};
 		end
 		else begin
 			rd_data_o 		= rd_dat_w[0];
 			rd_sparsemap_o	 	= rd_sparsemap_w[0];
+			rd_addr_w[0]		= rd_dat_addr_w;
+			rd_addr_w[1]		= {($clog2(`CHUNK_SIZE)+1){1'b0}};
+			rd_sparsemap_addr_w[0]	= rd_sparsemap_addr_i;
+			rd_sparsemap_addr_w[1]	= {($clog2(`RD_DAT_CYC_NUM)){1'b0}};
 		end
 	end
 

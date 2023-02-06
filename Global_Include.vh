@@ -1,13 +1,21 @@
 `timescale 100ps / 1ps
-`define CYCLE 20
+`define CYCLE 		20
+`define RUN_TIME	10
 
-//`define SHORT_CHANNEL
 
-`define CHANNEL_STACKING
+//`define CHANNEL_STACKING
+
+`ifdef CHANNEL_STACKING
+	`undef CHANNEL_PADDING
+`else
+	`define CHANNEL_PADDING
+`endif
 
 `define COMB_DAT_CHUNK
 
-`define RUN_TIME		10
+`ifdef CHANNEL_STACKING
+	`define COMB_DAT_CHUNK
+`endif
 
 `ifdef CHANNEL_STACKING
 	`define CHUNK_SIZE	128*2	//Bytes
@@ -26,12 +34,12 @@
 `define FILTER_DENSE_RATE 	70
 
 // Do not change when FULL_CHANNEL and CHANNEL_PADDING
-`define LAYER_CHANNEL_NUM 	96
+`define LAYER_CHANNEL_NUM 	128
 `define LAYER_FILTER_SIZE_MAX 	11
 `define LAYER_FILTER_SIZE_X 	5
 `define LAYER_FILTER_SIZE_Y 	5
-`define LAYER_OUTPUT_SIZE_X 	13
-`define LAYER_OUTPUT_SIZE_Y 	7
+`define LAYER_OUTPUT_SIZE_X 	10
+`define LAYER_OUTPUT_SIZE_Y 	10
 `define LAYER_IFM_SIZE_X 	(`LAYER_FILTER_SIZE_X + `LAYER_OUTPUT_SIZE_X - 1)
 `define LAYER_IFM_SIZE_Y 	(`LAYER_FILTER_SIZE_Y + `LAYER_OUTPUT_SIZE_Y - 1)
 
@@ -52,20 +60,11 @@
 `define SIM_WR_DAT_CYC_NUM	(`SIM_CHUNK_SIZE/`BUS_SIZE)
 `define SIM_RD_DAT_CYC_NUM	(`SIM_CHUNK_SIZE/`PREFIX_SUM_SIZE)
 
+//`define SHORT_CHANNEL
+//`ifdef SHORT_CHANNEL
+//	`undef FULL_CHANNEL
+//`else
+//	`define FULL_CHANNEL
+//`endif
 
-`ifdef SHORT_CHANNEL
-	`undef FULL_CHANNEL
-`else
-	`define FULL_CHANNEL
-`endif
-
-`ifdef CHANNEL_STACKING
-	`undef CHANNEL_PADDING
-`else
-	`define CHANNEL_PADDING
-`endif
-
-`ifdef CHANNEL_STACKING
-	`define COMB_DAT_CHUNK
-`endif
 
