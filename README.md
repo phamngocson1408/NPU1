@@ -1,3 +1,21 @@
+To run on Vivado
+1. Create Vivado version 2021.2 project
+   1.1 Select  Zynq UltraScale+ ZCU104 Evaluation Board
+2. Pull the NPU1 to source folder of Vivado project
+3. Rename NPU1 to new
+4. Move *.tb, Mem_Gen* files to Simulation Sources
+5. Click Setting
+   5.1. in Simulation tab:
+      5.1.1. Set Simulation runtime to 1ms
+      5.1.2. Save saif file + check saif_all_signals
+   5.2 in Synthesis tab:
+      Choose -faltten_hierarchy = none
+6. Generate data first
+	6.1 Set Mem_Gen_*_File as Top
+	6.2 Data is generated in sim1/behave/xsim
+7. Or compy data from githup folder to sim1/behave/xsim
+
+
 20220817 - Add Output_Buffer.sv
 20220828 - Add Compute_Clustersv
 20220828-16:00 - Add COMB_DAT_CHUNK define macro
@@ -43,3 +61,4 @@
 20221117 - Create Only_Sim_tb.sv
 20230206 - Clean Global_Include.vh
 20230206-15:30 - Rename Data_Chunk_Top.sv to Data_Chunk_Top_IFM.sv
+20230207 - Generate memories in files

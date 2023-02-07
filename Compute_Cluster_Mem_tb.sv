@@ -55,18 +55,6 @@ logic total_chunk_end_o;
 logic [$clog2(`COMPUTE_UNIT_NUM)-1:0] com_unit_out_buf_sel_i = 0;
 logic [`OUTPUT_BUF_SIZE-1:0] out_buf_dat_o;
 
-logic [`BUS_SIZE-1:0] 			ifm_sram_wr_sparsemap_w;
-logic [`BUS_SIZE-1:0][7:0] 		ifm_sram_wr_nonzero_data_w;
-logic 					ifm_sram_wr_valid_w;
-logic [$clog2(`WR_DAT_CYC_NUM)-1:0] 	ifm_sram_wr_dat_count_w;
-logic [$clog2(`SRAM_IFM_NUM)-1:0] 	ifm_sram_wr_chunk_count_w;
-
-logic [`BUS_SIZE-1:0] 			fil_sram_wr_sparsemap_w;
-logic [`BUS_SIZE-1:0][7:0] 		fil_sram_wr_nonzero_data_w;
-logic 					fil_sram_wr_valid_w;
-logic [$clog2(`WR_DAT_CYC_NUM)-1:0]	fil_sram_wr_dat_count_w;
-logic [$clog2(`SRAM_FILTER_NUM)-1:0] 	fil_sram_wr_chunk_count_w;
-
 `ifdef CHANNEL_STACKING
 logic inner_loop_start_i;
 int fil_loop_y_idx_start;
@@ -111,48 +99,8 @@ Compute_Cluster_Mem u_Compute_Cluster_Mem (
 `endif
 	,.com_unit_out_buf_sel_i
 	,.out_buf_dat_o
-
-	,.ifm_sram_wr_sparsemap_i(ifm_sram_wr_sparsemap_w)
-	,.ifm_sram_wr_nonzero_data_i(ifm_sram_wr_nonzero_data_w)
-	,.ifm_sram_wr_valid_i(ifm_sram_wr_valid_w)
-	,.ifm_sram_wr_dat_count_i(ifm_sram_wr_dat_count_w)
-	,.ifm_sram_wr_chunk_count_i(ifm_sram_wr_chunk_count_w)
-
-	,.fil_sram_wr_sparsemap_i(fil_sram_wr_sparsemap_w)
-	,.fil_sram_wr_nonzero_data_i(fil_sram_wr_nonzero_data_w)
-	,.fil_sram_wr_valid_i(fil_sram_wr_valid_w)
-	,.fil_sram_wr_dat_count_i(fil_sram_wr_dat_count_w)
-	,.fil_sram_wr_chunk_count_i(fil_sram_wr_chunk_count_w)
 );
 
-
-/*******************************************************************************************************/
-logic mem_gen_start_i;
-logic mem_gen_finish_w;
-
-`ifdef CHANNEL_STACKING
-Mem_Gen_Stacking u_Mem_Gen_Stacking (
-`elsif CHANNEL_PADDING
-Mem_Gen_Padding u_Mem_Gen_Padding (
-`endif
-	 .rst_i
-	,.clk_i
-
-	,.mem_gen_start_i
-	,.mem_gen_finish_o(mem_gen_finish_w)
-
-	,.ifm_sram_wr_sparsemap_o(ifm_sram_wr_sparsemap_w)
-	,.ifm_sram_wr_nonzero_data_o(ifm_sram_wr_nonzero_data_w)
-	,.ifm_sram_wr_valid_o(ifm_sram_wr_valid_w)
-	,.ifm_sram_wr_dat_count_o(ifm_sram_wr_dat_count_w)
-	,.ifm_sram_wr_chunk_count_o(ifm_sram_wr_chunk_count_w)
-
-	,.fil_sram_wr_sparsemap_o(fil_sram_wr_sparsemap_w)
-	,.fil_sram_wr_nonzero_data_o(fil_sram_wr_nonzero_data_w)
-	,.fil_sram_wr_valid_o(fil_sram_wr_valid_w)
-	,.fil_sram_wr_dat_count_o(fil_sram_wr_dat_count_w)
-	,.fil_sram_wr_chunk_count_o(fil_sram_wr_chunk_count_w)
-);
 
 /*******************************************************************************************************/
 logic [31:0] total_ifm_dat_rd_num_r = 0;
@@ -229,7 +177,7 @@ initial begin
 
 	@(negedge rst_i) ;
 	@(posedge clk_i) #1;
-
+/*
 	// Write mem
 	mem_gen_start_i = 1'b1;
 	fork
@@ -241,7 +189,7 @@ initial begin
 
 	// Finish wrting mem
 	@(posedge mem_gen_finish_w);
-
+*/
 	// Read mem to chunks
 	if (SIM_LOOP_Z_NUM == 1)
 		sub_channel_size = SIM_LAST_CHANNEL_SIZE;
@@ -346,18 +294,6 @@ initial begin
 
 	@(negedge rst_i) ;
 	@(posedge clk_i) #1;
-
-	// Write mem
-	mem_gen_start_i = 1'b1;
-	fork
-		begin
-			@(posedge clk_i) #1;
-			mem_gen_start_i = 1'b0;
-		end
-	join_none
-
-	// Finish wrting mem
-	@(posedge mem_gen_finish_w);
 
 	// Read mem to chunks
 	if (SIM_LOOP_Z_NUM == 1)
