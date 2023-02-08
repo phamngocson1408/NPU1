@@ -269,7 +269,7 @@ initial begin
 forever begin
 	@(posedge clk_i);
 	if (total_chunk_end_o) begin
-		#1;
+		//#1;
 		-> sub_chunk_end_event;
 	end
 end
@@ -293,7 +293,7 @@ initial begin
 	acc_buf_sel_i = 0;
 
 	@(negedge rst_i) ;
-	@(posedge clk_i) #1;
+	@(posedge clk_i) //#1;
 
 	// Read mem to chunks
 	if (SIM_LOOP_Z_NUM == 1)
