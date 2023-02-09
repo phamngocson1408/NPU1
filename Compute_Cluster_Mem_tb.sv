@@ -281,6 +281,8 @@ int chunk_dat_size;
 int chunk_dat_wr_cyc_num;
 assign	rd_fil_sparsemap_last_i =  chunk_dat_wr_cyc_num - 1;
 
+int output_log = $fopen("Output_Log.txt", "w");
+
 initial begin
 	run_valid_i = 0;
 	ifm_chunk_wr_sel_i = 1;
@@ -340,7 +342,15 @@ initial begin
 			end
 		end
 	end
+	$fclose(output_log);
 	$finish();
+end
+
+// To log output
+always @(posedge clk_i) begin
+	if (run_valid_i) begin
+		$fdisplay(output_log, "%h", out_buf_dat_o);
+	end
 end
 
 //Generate the total chunk start signal

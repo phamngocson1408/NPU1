@@ -24,7 +24,7 @@
 `endif
 
 `define BUS_SIZE		8	//Bytes
-`define PREFIX_SUM_SIZE		8	//bits
+`define PREFIX_SUM_SIZE		128	//bits
 `define OUTPUT_BUF_SIZE		32	//bits
 `define COMPUTE_UNIT_NUM	32
 `define DAT_SIZE		8	//bits 
@@ -45,8 +45,8 @@
 
 `define OUTPUT_BUF_NUM		(`LAYER_OUTPUT_SIZE_Y * `LAYER_OUTPUT_SIZE_X) 
 
-`define SRAM_IFM_NUM 		10000
-`define SRAM_FILTER_NUM 	1000
+`define SRAM_IFM_NUM 		200
+`define SRAM_FILTER_NUM 	800
 
 `define WR_DAT_CYC_NUM		(`CHUNK_SIZE/`BUS_SIZE)
 `define RD_DAT_CYC_NUM		(`CHUNK_SIZE/`PREFIX_SUM_SIZE)
