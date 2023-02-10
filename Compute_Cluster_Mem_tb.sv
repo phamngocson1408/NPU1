@@ -269,7 +269,7 @@ initial begin
 forever begin
 	@(posedge clk_i);
 	if (total_chunk_end_o) begin
-		//#1;
+		#1;
 		-> sub_chunk_end_event;
 	end
 end
@@ -279,7 +279,10 @@ localparam int SIM_LOOP_Z_NUM = (`LAYER_CHANNEL_NUM % `SIM_CHUNK_SIZE) ? (`LAYER
 localparam int SIM_LAST_CHANNEL_SIZE = (`LAYER_CHANNEL_NUM % `SIM_CHUNK_SIZE) ? (`LAYER_CHANNEL_NUM % `SIM_CHUNK_SIZE) : `SIM_CHUNK_SIZE;
 int chunk_dat_size;
 int chunk_dat_wr_cyc_num;
-assign	rd_fil_sparsemap_last_i =  chunk_dat_wr_cyc_num - 1;
+int rd_fil_sparsemap_num;
+assign	rd_fil_sparsemap_last_i =  rd_fil_sparsemap_num - 1;
+
+int output_log = $fopen("Output_Log.txt", "w");
 
 initial begin
 	run_valid_i = 0;
@@ -293,7 +296,7 @@ initial begin
 	acc_buf_sel_i = 0;
 
 	@(negedge rst_i) ;
-	@(posedge clk_i) //#1;
+	@(posedge clk_i) #1;
 
 	// Read mem to chunks
 	if (SIM_LOOP_Z_NUM == 1)
@@ -302,6 +305,7 @@ initial begin
 		chunk_dat_size = `SIM_CHUNK_SIZE;
 
 	chunk_dat_wr_cyc_num = (chunk_dat_size % `BUS_SIZE) ? chunk_dat_size/`BUS_SIZE + 1 : chunk_dat_size/`BUS_SIZE;
+	rd_fil_sparsemap_num = (chunk_dat_size % `PREFIX_SUM_SIZE) ? chunk_dat_size/`PREFIX_SUM_SIZE + 1 : chunk_dat_size/`PREFIX_SUM_SIZE;
 	fork
 		wr_fil_chunk(chunk_dat_wr_cyc_num);
 		wr_ifm_chunk(chunk_dat_wr_cyc_num);
@@ -340,8 +344,20 @@ initial begin
 			end
 		end
 	end
+	$fclose(output_log);
 	$finish();
 end
+
+// To log output
+always @(posedge clk_i) begin
+		$fdisplay(output_log, "%h", Compute_Cluster_Mem_tb.u_Compute_Cluster_Mem.u_Compute_Cluster.gen_com_unit[0].u_Compute_Unit_Top.u_Compute_Unit.u_Input_Selector.u_Data_Chunk_Top_IFM.u_Data_Chunk_0.rd_data_o);
+end
+
+//always @(posedge clk_i) begin
+//	if (run_valid_i) begin
+//		$fdisplay(output_log, "%h", out_buf_dat_o);
+//	end
+//end
 
 //Generate the total chunk start signal
 logic run_valid_delay_r;

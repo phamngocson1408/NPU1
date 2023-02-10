@@ -35,8 +35,13 @@ logic [`CHUNK_SIZE*8-1:0] mem_nonzero_data_r[`SRAM_FILTER_NUM-1:0];
 logic [`CHUNK_SIZE-1:0] mem_sparsemap_r[`SRAM_FILTER_NUM-1:0];
 
 initial begin
+`ifdef CHANNEL_STACKING
+	$readmemh("Mem_Stacking_Fil_Data.txt", mem_nonzero_data_r);
+	$readmemh("Mem_Stacking_Fil_SparseMap.txt", mem_sparsemap_r);
+`else
 	$readmemh("Mem_Padding_Fil_Data.txt", mem_nonzero_data_r);
 	$readmemh("Mem_Padding_Fil_SparseMap.txt", mem_sparsemap_r);
+`endif
 end
 
 assign rd_nonzero_data_o = mem_nonzero_data_r[rd_chunk_count_i][`BUS_SIZE*rd_dat_count_i*8 +: `BUS_SIZE*8];
