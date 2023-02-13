@@ -282,7 +282,13 @@ int chunk_dat_wr_cyc_num;
 int rd_fil_sparsemap_num;
 assign	rd_fil_sparsemap_last_i =  rd_fil_sparsemap_num - 1;
 
-int output_log = $fopen("Output_Log.txt", "w");
+//int output_log = $fopen("Output_Log.txt", "w");
+
+logic [31:0] loop_z_idx;
+logic [31:0] fil_y_idx;
+logic [31:0] fil_x_idx;
+logic [31:0] ifm_y_idx;
+logic [31:0] ifm_x_idx;
 
 initial begin
 	run_valid_i = 0;
@@ -315,7 +321,7 @@ initial begin
 //	@(posedge clk_i) #1;
 	run_valid_i = 1'b1;
 
-	for (int loop_z_idx = 0; loop_z_idx < SIM_LOOP_Z_NUM; loop_z_idx += 1 ) begin
+	for (loop_z_idx = 0; loop_z_idx < SIM_LOOP_Z_NUM; loop_z_idx += 1 ) begin
 		if (loop_z_idx == SIM_LOOP_Z_NUM - 1)
 			chunk_dat_size = SIM_LAST_CHANNEL_SIZE;
 		else
@@ -323,15 +329,15 @@ initial begin
 
 		chunk_dat_wr_cyc_num = (chunk_dat_size % `BUS_SIZE) ? chunk_dat_size/`BUS_SIZE + 1 : chunk_dat_size/`BUS_SIZE;
 
-		for (int fil_y_idx = 0; fil_y_idx < `LAYER_FILTER_SIZE_Y; fil_y_idx += 1) begin
-			for (int fil_x_idx = 0; fil_x_idx < `LAYER_FILTER_SIZE_X; fil_x_idx += 1) begin
+		for (fil_y_idx = 0; fil_y_idx < `LAYER_FILTER_SIZE_Y; fil_y_idx += 1) begin
+			for (fil_x_idx = 0; fil_x_idx < `LAYER_FILTER_SIZE_X; fil_x_idx += 1) begin
 				fork begin
 					fil_sram_rd_count_r = (loop_z_idx * `LAYER_FILTER_SIZE_Y * `LAYER_FILTER_SIZE_X) + (fil_y_idx * `LAYER_FILTER_SIZE_X) + fil_x_idx + 1;
 					wr_fil_chunk(chunk_dat_wr_cyc_num);
 				end join_none
 
-				for (int ifm_y_idx = fil_y_idx; ifm_y_idx < `LAYER_OUTPUT_SIZE_Y + fil_y_idx; ifm_y_idx += 1) begin
-					for (int ifm_x_idx = fil_x_idx; ifm_x_idx < `LAYER_OUTPUT_SIZE_X + fil_x_idx; ifm_x_idx += 1) begin
+				for (ifm_y_idx = fil_y_idx; ifm_y_idx < `LAYER_OUTPUT_SIZE_Y + fil_y_idx; ifm_y_idx += 1) begin
+					for (ifm_x_idx = fil_x_idx; ifm_x_idx < `LAYER_OUTPUT_SIZE_X + fil_x_idx; ifm_x_idx += 1) begin
 						fork begin
 							ifm_sram_rd_count_i = (loop_z_idx * `LAYER_IFM_SIZE_Y * `LAYER_IFM_SIZE_X) + (ifm_y_idx * `LAYER_IFM_SIZE_X) + ifm_x_idx + 1;
 							wr_ifm_chunk(chunk_dat_wr_cyc_num);
@@ -344,14 +350,14 @@ initial begin
 			end
 		end
 	end
-	$fclose(output_log);
+//	$fclose(output_log);
 	$finish();
 end
 
-// To log output
-always @(posedge clk_i) begin
-		$fdisplay(output_log, "%h", Compute_Cluster_Mem_tb.u_Compute_Cluster_Mem.u_Compute_Cluster.gen_com_unit[0].u_Compute_Unit_Top.u_Compute_Unit.u_Input_Selector.u_Data_Chunk_Top_IFM.u_Data_Chunk_0.rd_data_o);
-end
+//// To log output
+//always @(posedge clk_i) begin
+//		$fdisplay(output_log, "%h", Compute_Cluster_Mem_tb.u_Compute_Cluster_Mem.u_Compute_Cluster.gen_com_unit[0].u_Compute_Unit_Top.u_Compute_Unit.u_Input_Selector.u_Data_Chunk_Top_IFM.u_Data_Chunk_0.rd_data_o);
+//end
 
 //always @(posedge clk_i) begin
 //	if (run_valid_i) begin
