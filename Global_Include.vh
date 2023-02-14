@@ -11,7 +11,7 @@
 	`define CHANNEL_PADDING
 `endif
 
-`define COMB_DAT_CHUNK
+//`define COMB_DAT_CHUNK
 
 `ifdef CHANNEL_STACKING
 	`define COMB_DAT_CHUNK
@@ -24,7 +24,7 @@
 `endif
 
 `define BUS_SIZE		8	//Bytes
-`define PREFIX_SUM_SIZE		128	//bits
+`define PREFIX_SUM_SIZE		8	//bits
 `define OUTPUT_BUF_SIZE		32	//bits
 `define COMPUTE_UNIT_NUM	1
 `define DAT_SIZE		8	//bits 
@@ -34,7 +34,7 @@
 `define FILTER_DENSE_RATE 	70
 
 // Do not change when FULL_CHANNEL and CHANNEL_PADDING
-`define LAYER_CHANNEL_NUM 	196
+`define LAYER_CHANNEL_NUM 	128
 `define LAYER_FILTER_SIZE_MAX 	11
 `define LAYER_FILTER_SIZE_X 	4
 `define LAYER_FILTER_SIZE_Y 	4

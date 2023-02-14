@@ -57,10 +57,10 @@ logic [`OUTPUT_BUF_SIZE-1:0] out_buf_dat_o;
 
 `ifdef CHANNEL_STACKING
 logic inner_loop_start_i;
-int fil_loop_y_idx_start;
-int fil_loop_y_idx_last;
-int fil_loop_y_step;
-int sub_channel_size;
+logic [$clog2(`LAYER_IFM_SIZE_Y)-1:0] fil_loop_y_idx_start;
+logic [$clog2(`LAYER_IFM_SIZE_Y)-1:0] fil_loop_y_idx_last;
+logic [$clog2(`LAYER_IFM_SIZE_X*`DIVIDED_CHANNEL_NUM/`PREFIX_SUM_SIZE + 1)-1:0] fil_loop_y_step;
+logic [$clog2(`DIVIDED_CHANNEL_NUM)-1:0] sub_channel_size;
 logic total_inner_loop_finish_o;
 `endif
 
@@ -157,11 +157,11 @@ int ifm_chunk_dat_wr_cyc_num;
 
 int loop_z_idx;
 
-int ifm_loop_y_num = `LAYER_IFM_SIZE_Y;
-int ifm_loop_y_idx;
+logic [$clog2(`LAYER_IFM_SIZE_Y)-1:0] ifm_loop_y_num = `LAYER_IFM_SIZE_Y;
+logic [$clog2(`LAYER_IFM_SIZE_Y)-1:0] ifm_loop_y_idx;
 
 int fil_loop_y_idx;
-int fil_loop_y_dat_size;
+logic [$clog2(`LAYER_IFM_SIZE_X*`DIVIDED_CHANNEL_NUM)-1:0] fil_loop_y_dat_size;
 
 int ifm_loop_x_idx;
 int ifm_loop_x_dat_start;
@@ -208,7 +208,7 @@ initial begin
 	join
 
 	// Start execution	
-//	@(negedge clk_i) #1;
+	@(negedge clk_i) #1;
 	run_valid_i = 1'b1;
 
 	for (loop_z_idx = 0; loop_z_idx < SIM_LOOP_Z_NUM; loop_z_idx += 1 ) begin
@@ -284,12 +284,6 @@ assign	rd_fil_sparsemap_last_i =  rd_fil_sparsemap_num - 1;
 
 //int output_log = $fopen("Output_Log.txt", "w");
 
-logic [31:0] loop_z_idx;
-logic [31:0] fil_y_idx;
-logic [31:0] fil_x_idx;
-logic [31:0] ifm_y_idx;
-logic [31:0] ifm_x_idx;
-
 initial begin
 	run_valid_i = 0;
 	ifm_chunk_wr_sel_i = 1;
@@ -321,7 +315,7 @@ initial begin
 //	@(posedge clk_i) #1;
 	run_valid_i = 1'b1;
 
-	for (loop_z_idx = 0; loop_z_idx < SIM_LOOP_Z_NUM; loop_z_idx += 1 ) begin
+	for (int loop_z_idx = 0; loop_z_idx < SIM_LOOP_Z_NUM; loop_z_idx += 1 ) begin
 		if (loop_z_idx == SIM_LOOP_Z_NUM - 1)
 			chunk_dat_size = SIM_LAST_CHANNEL_SIZE;
 		else
@@ -329,15 +323,15 @@ initial begin
 
 		chunk_dat_wr_cyc_num = (chunk_dat_size % `BUS_SIZE) ? chunk_dat_size/`BUS_SIZE + 1 : chunk_dat_size/`BUS_SIZE;
 
-		for (fil_y_idx = 0; fil_y_idx < `LAYER_FILTER_SIZE_Y; fil_y_idx += 1) begin
-			for (fil_x_idx = 0; fil_x_idx < `LAYER_FILTER_SIZE_X; fil_x_idx += 1) begin
+		for (int fil_y_idx = 0; fil_y_idx < `LAYER_FILTER_SIZE_Y; fil_y_idx += 1) begin
+			for (int fil_x_idx = 0; fil_x_idx < `LAYER_FILTER_SIZE_X; fil_x_idx += 1) begin
 				fork begin
 					fil_sram_rd_count_r = (loop_z_idx * `LAYER_FILTER_SIZE_Y * `LAYER_FILTER_SIZE_X) + (fil_y_idx * `LAYER_FILTER_SIZE_X) + fil_x_idx + 1;
 					wr_fil_chunk(chunk_dat_wr_cyc_num);
 				end join_none
 
-				for (ifm_y_idx = fil_y_idx; ifm_y_idx < `LAYER_OUTPUT_SIZE_Y + fil_y_idx; ifm_y_idx += 1) begin
-					for (ifm_x_idx = fil_x_idx; ifm_x_idx < `LAYER_OUTPUT_SIZE_X + fil_x_idx; ifm_x_idx += 1) begin
+				for (int ifm_y_idx = fil_y_idx; ifm_y_idx < `LAYER_OUTPUT_SIZE_Y + fil_y_idx; ifm_y_idx += 1) begin
+					for (int ifm_x_idx = fil_x_idx; ifm_x_idx < `LAYER_OUTPUT_SIZE_X + fil_x_idx; ifm_x_idx += 1) begin
 						fork begin
 							ifm_sram_rd_count_i = (loop_z_idx * `LAYER_IFM_SIZE_Y * `LAYER_IFM_SIZE_X) + (ifm_y_idx * `LAYER_IFM_SIZE_X) + ifm_x_idx + 1;
 							wr_ifm_chunk(chunk_dat_wr_cyc_num);

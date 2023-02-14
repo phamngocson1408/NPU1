@@ -43,11 +43,11 @@ module Compute_Cluster_Mem #(
 
 `ifdef CHANNEL_STACKING
 	,input inner_loop_start_i
-	,input [31:0] ifm_loop_y_idx_i 
-	,input [31:0] fil_loop_y_idx_start_i 
-	,input [31:0] fil_loop_y_idx_last_i 
-	,input [31:0] fil_loop_y_step_i 
-	,input [31:0] sub_channel_size_i 
+	,input [$clog2(`LAYER_IFM_SIZE_Y)-1:0] ifm_loop_y_idx_i 
+	,input [$clog2(`LAYER_IFM_SIZE_Y)-1:0] fil_loop_y_idx_start_i 
+	,input [$clog2(`LAYER_IFM_SIZE_Y)-1:0] fil_loop_y_idx_last_i 
+	,input [$clog2(`LAYER_IFM_SIZE_X*`DIVIDED_CHANNEL_NUM/`PREFIX_SUM_SIZE + 1)-1:0] fil_loop_y_step_i 
+	,input [$clog2(`DIVIDED_CHANNEL_NUM)-1:0] sub_channel_size_i 
 	,output logic total_inner_loop_finish_o
 `elsif CHANNEL_PADDING
 	,input total_chunk_start_i
