@@ -105,7 +105,7 @@ module Data_Chunk_Top_Filter #(
 			rd_data_o 		= rd_dat_w[1];
 			rd_sparsemap_o	 	= rd_sparsemap_w[1];
 			rd_addr_w[1]		= rd_dat_addr_w;
-			rd_addr_w[0]		= 1;
+			rd_addr_w[0]		= {($clog2(`CHUNK_SIZE)+1){1'b0}};
 			rd_sparsemap_addr_w[1]	= rd_sparsemap_addr_i;
 			rd_sparsemap_addr_w[0]	= {($clog2(`RD_DAT_CYC_NUM)){1'b0}};
 		end
@@ -113,7 +113,7 @@ module Data_Chunk_Top_Filter #(
 			rd_data_o 		= rd_dat_w[0];
 			rd_sparsemap_o	 	= rd_sparsemap_w[0];
 			rd_addr_w[0]		= rd_dat_addr_w;
-			rd_addr_w[1]		= 1;
+			rd_addr_w[1]		= {($clog2(`CHUNK_SIZE)+1){1'b0}};
 			rd_sparsemap_addr_w[0]	= rd_sparsemap_addr_i;
 			rd_sparsemap_addr_w[1]	= {($clog2(`RD_DAT_CYC_NUM)){1'b0}};
 		end

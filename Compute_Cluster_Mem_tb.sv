@@ -55,6 +55,18 @@ logic total_chunk_end_o;
 logic [$clog2(`COMPUTE_UNIT_NUM)-1:0] com_unit_out_buf_sel_i = 0;
 logic [`OUTPUT_BUF_SIZE-1:0] out_buf_dat_o;
 
+logic [`BUS_SIZE-1:0] 			ifm_sram_wr_sparsemap_w;
+logic [`BUS_SIZE-1:0][7:0] 		ifm_sram_wr_nonzero_data_w;
+logic 					ifm_sram_wr_valid_w;
+logic [$clog2(`WR_DAT_CYC_NUM)-1:0] 	ifm_sram_wr_dat_count_w;
+logic [$clog2(`SRAM_IFM_NUM)-1:0] 	ifm_sram_wr_chunk_count_w;
+
+logic [`BUS_SIZE-1:0] 			fil_sram_wr_sparsemap_w;
+logic [`BUS_SIZE-1:0][7:0] 		fil_sram_wr_nonzero_data_w;
+logic 					fil_sram_wr_valid_w;
+logic [$clog2(`WR_DAT_CYC_NUM)-1:0]	fil_sram_wr_dat_count_w;
+logic [$clog2(`SRAM_FILTER_NUM)-1:0] 	fil_sram_wr_chunk_count_w;
+
 `ifdef CHANNEL_STACKING
 logic inner_loop_start_i;
 logic [$clog2(`LAYER_IFM_SIZE_Y)-1:0] fil_loop_y_idx_start;
@@ -99,8 +111,48 @@ Compute_Cluster_Mem u_Compute_Cluster_Mem (
 `endif
 	,.com_unit_out_buf_sel_i
 	,.out_buf_dat_o
+
+	,.ifm_sram_wr_sparsemap_i(ifm_sram_wr_sparsemap_w)
+	,.ifm_sram_wr_nonzero_data_i(ifm_sram_wr_nonzero_data_w)
+	,.ifm_sram_wr_valid_i(ifm_sram_wr_valid_w)
+	,.ifm_sram_wr_dat_count_i(ifm_sram_wr_dat_count_w)
+	,.ifm_sram_wr_chunk_count_i(ifm_sram_wr_chunk_count_w)
+
+	,.fil_sram_wr_sparsemap_i(fil_sram_wr_sparsemap_w)
+	,.fil_sram_wr_nonzero_data_i(fil_sram_wr_nonzero_data_w)
+	,.fil_sram_wr_valid_i(fil_sram_wr_valid_w)
+	,.fil_sram_wr_dat_count_i(fil_sram_wr_dat_count_w)
+	,.fil_sram_wr_chunk_count_i(fil_sram_wr_chunk_count_w)
 );
 
+
+/*******************************************************************************************************/
+logic mem_gen_start_i;
+logic mem_gen_finish_w;
+
+`ifdef CHANNEL_STACKING
+Mem_Gen_Stacking u_Mem_Gen_Stacking (
+`elsif CHANNEL_PADDING
+Mem_Gen_Padding u_Mem_Gen_Padding (
+`endif
+	 .rst_i
+	,.clk_i
+
+	,.mem_gen_start_i
+	,.mem_gen_finish_o(mem_gen_finish_w)
+
+	,.ifm_sram_wr_sparsemap_o(ifm_sram_wr_sparsemap_w)
+	,.ifm_sram_wr_nonzero_data_o(ifm_sram_wr_nonzero_data_w)
+	,.ifm_sram_wr_valid_o(ifm_sram_wr_valid_w)
+	,.ifm_sram_wr_dat_count_o(ifm_sram_wr_dat_count_w)
+	,.ifm_sram_wr_chunk_count_o(ifm_sram_wr_chunk_count_w)
+
+	,.fil_sram_wr_sparsemap_o(fil_sram_wr_sparsemap_w)
+	,.fil_sram_wr_nonzero_data_o(fil_sram_wr_nonzero_data_w)
+	,.fil_sram_wr_valid_o(fil_sram_wr_valid_w)
+	,.fil_sram_wr_dat_count_o(fil_sram_wr_dat_count_w)
+	,.fil_sram_wr_chunk_count_o(fil_sram_wr_chunk_count_w)
+);
 
 /*******************************************************************************************************/
 logic [31:0] total_ifm_dat_rd_num_r = 0;
@@ -157,11 +209,11 @@ int ifm_chunk_dat_wr_cyc_num;
 
 int loop_z_idx;
 
-logic [$clog2(`LAYER_IFM_SIZE_Y)-1:0] ifm_loop_y_num = `LAYER_IFM_SIZE_Y;
+int ifm_loop_y_num = `LAYER_IFM_SIZE_Y;
 logic [$clog2(`LAYER_IFM_SIZE_Y)-1:0] ifm_loop_y_idx;
 
 int fil_loop_y_idx;
-logic [$clog2(`LAYER_IFM_SIZE_X*`DIVIDED_CHANNEL_NUM)-1:0] fil_loop_y_dat_size;
+int fil_loop_y_dat_size;
 
 int ifm_loop_x_idx;
 int ifm_loop_x_dat_start;
@@ -177,7 +229,7 @@ initial begin
 
 	@(negedge rst_i) ;
 	@(posedge clk_i) #1;
-/*
+
 	// Write mem
 	mem_gen_start_i = 1'b1;
 	fork
@@ -189,7 +241,7 @@ initial begin
 
 	// Finish wrting mem
 	@(posedge mem_gen_finish_w);
-*/
+
 	// Read mem to chunks
 	if (SIM_LOOP_Z_NUM == 1)
 		sub_channel_size = SIM_LAST_CHANNEL_SIZE;
@@ -208,7 +260,7 @@ initial begin
 	join
 
 	// Start execution	
-	@(negedge clk_i) #1;
+//	@(negedge clk_i) #1;
 	run_valid_i = 1'b1;
 
 	for (loop_z_idx = 0; loop_z_idx < SIM_LOOP_Z_NUM; loop_z_idx += 1 ) begin
@@ -279,10 +331,7 @@ localparam int SIM_LOOP_Z_NUM = (`LAYER_CHANNEL_NUM % `SIM_CHUNK_SIZE) ? (`LAYER
 localparam int SIM_LAST_CHANNEL_SIZE = (`LAYER_CHANNEL_NUM % `SIM_CHUNK_SIZE) ? (`LAYER_CHANNEL_NUM % `SIM_CHUNK_SIZE) : `SIM_CHUNK_SIZE;
 int chunk_dat_size;
 int chunk_dat_wr_cyc_num;
-int rd_fil_sparsemap_num;
-assign	rd_fil_sparsemap_last_i =  rd_fil_sparsemap_num - 1;
-
-//int output_log = $fopen("Output_Log.txt", "w");
+assign	rd_fil_sparsemap_last_i =  chunk_dat_wr_cyc_num - 1;
 
 initial begin
 	run_valid_i = 0;
@@ -298,6 +347,18 @@ initial begin
 	@(negedge rst_i) ;
 	@(posedge clk_i) #1;
 
+	// Write mem
+	mem_gen_start_i = 1'b1;
+	fork
+		begin
+			@(posedge clk_i) #1;
+			mem_gen_start_i = 1'b0;
+		end
+	join_none
+
+	// Finish wrting mem
+	@(posedge mem_gen_finish_w);
+
 	// Read mem to chunks
 	if (SIM_LOOP_Z_NUM == 1)
 		chunk_dat_size = SIM_LAST_CHANNEL_SIZE;
@@ -305,7 +366,6 @@ initial begin
 		chunk_dat_size = `SIM_CHUNK_SIZE;
 
 	chunk_dat_wr_cyc_num = (chunk_dat_size % `BUS_SIZE) ? chunk_dat_size/`BUS_SIZE + 1 : chunk_dat_size/`BUS_SIZE;
-	rd_fil_sparsemap_num = (chunk_dat_size % `PREFIX_SUM_SIZE) ? chunk_dat_size/`PREFIX_SUM_SIZE + 1 : chunk_dat_size/`PREFIX_SUM_SIZE;
 	fork
 		wr_fil_chunk(chunk_dat_wr_cyc_num);
 		wr_ifm_chunk(chunk_dat_wr_cyc_num);
@@ -344,20 +404,8 @@ initial begin
 			end
 		end
 	end
-//	$fclose(output_log);
 	$finish();
 end
-
-//// To log output
-//always @(posedge clk_i) begin
-//		$fdisplay(output_log, "%h", Compute_Cluster_Mem_tb.u_Compute_Cluster_Mem.u_Compute_Cluster.gen_com_unit[0].u_Compute_Unit_Top.u_Compute_Unit.u_Input_Selector.u_Data_Chunk_Top_IFM.u_Data_Chunk_0.rd_data_o);
-//end
-
-//always @(posedge clk_i) begin
-//	if (run_valid_i) begin
-//		$fdisplay(output_log, "%h", out_buf_dat_o);
-//	end
-//end
 
 //Generate the total chunk start signal
 logic run_valid_delay_r;
