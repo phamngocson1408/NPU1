@@ -3,7 +3,7 @@
 `define RUN_TIME	10
 
 
-`define CHANNEL_STACKING
+//`define CHANNEL_STACKING
 
 `ifdef CHANNEL_STACKING
 	`undef CHANNEL_PADDING
@@ -26,7 +26,7 @@
 `define BUS_SIZE		8	//Bytes
 `define PREFIX_SUM_SIZE		8	//bits
 `define OUTPUT_BUF_SIZE		32	//bits
-`define COMPUTE_UNIT_NUM	1
+`define COMPUTE_UNIT_NUM	32
 `define DAT_SIZE		8	//bits 
 `define DIVIDED_CHANNEL_NUM 	8
 
@@ -34,10 +34,10 @@
 `define FILTER_DENSE_RATE 	70
 
 // Do not change when FULL_CHANNEL and CHANNEL_PADDING
-`define LAYER_CHANNEL_NUM 	128
+`define LAYER_CHANNEL_NUM 	192
 `define LAYER_FILTER_SIZE_MAX 	11
-`define LAYER_FILTER_SIZE_X 	4
-`define LAYER_FILTER_SIZE_Y 	4
+`define LAYER_FILTER_SIZE_X 	2
+`define LAYER_FILTER_SIZE_Y 	2
 `define LAYER_OUTPUT_SIZE_X 	6
 `define LAYER_OUTPUT_SIZE_Y 	6
 `define LAYER_IFM_SIZE_X 	(`LAYER_FILTER_SIZE_X + `LAYER_OUTPUT_SIZE_X - 1)
