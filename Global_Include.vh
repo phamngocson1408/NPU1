@@ -3,7 +3,7 @@
 `define RUN_TIME	10
 
 
-`define CHANNEL_STACKING
+//`define CHANNEL_STACKING
 
 `ifdef CHANNEL_STACKING
 	`undef CHANNEL_PADDING
@@ -11,7 +11,7 @@
 	`define CHANNEL_PADDING
 `endif
 
-//`define COMB_DAT_CHUNK
+`define COMB_DAT_CHUNK
 
 `ifdef CHANNEL_STACKING
 	`define COMB_DAT_CHUNK
@@ -24,9 +24,9 @@
 `endif
 
 `define BUS_SIZE		8	//Bytes
-`define PREFIX_SUM_SIZE		8	//bits
+`define PREFIX_SUM_SIZE		128	//bits
 `define OUTPUT_BUF_SIZE		32	//bits
-`define COMPUTE_UNIT_NUM	1
+`define COMPUTE_UNIT_NUM	32
 `define DAT_SIZE		8	//bits 
 `define DIVIDED_CHANNEL_NUM 	8
 

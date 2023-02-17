@@ -293,7 +293,7 @@ initial begin
 		else
 			chunk_dat_size = `SIM_CHUNK_SIZE;
 
-		chunk_dat_wr_cyc_num = (chunk_dat_size % `BUS_SIZE) ? chunk_dat_size/`BUS_SIZE + 1 : chunk_dat_size/`BUS_SIZE;
+		chunk_dat_wr_cyc_num = (`SIM_CHUNK_SIZE % `BUS_SIZE) ? `SIM_CHUNK_SIZE/`BUS_SIZE + 1 : `SIM_CHUNK_SIZE/`BUS_SIZE;
 		rd_fil_sparsemap_num = (chunk_dat_size % `PREFIX_SUM_SIZE) ? chunk_dat_size/`PREFIX_SUM_SIZE + 1 : chunk_dat_size/`PREFIX_SUM_SIZE;
 
 		for (fil_y_idx = 0; fil_y_idx < `LAYER_FILTER_SIZE_Y; fil_y_idx += 1) begin
@@ -345,7 +345,7 @@ initial begin
 		else
 			chunk_dat_size_fil = `SIM_CHUNK_SIZE;
 
-		chunk_dat_wr_cyc_num_fil = (chunk_dat_size_fil % `BUS_SIZE) ? chunk_dat_size_fil/`BUS_SIZE + 1 : chunk_dat_size_fil/`BUS_SIZE;
+		chunk_dat_wr_cyc_num_fil = (`SIM_CHUNK_SIZE % `BUS_SIZE) ? `SIM_CHUNK_SIZE/`BUS_SIZE + 1 : `SIM_CHUNK_SIZE/`BUS_SIZE;
 
 		for (fil_y_idx_fil = 0; fil_y_idx_fil < `LAYER_FILTER_SIZE_Y; fil_y_idx_fil += 1) begin
 			for (fil_x_idx_fil = 0; fil_x_idx_fil < `LAYER_FILTER_SIZE_X; fil_x_idx_fil += 1) begin
