@@ -3,7 +3,7 @@
 `define RUN_TIME	10
 
 
-//`define CHANNEL_STACKING
+`define CHANNEL_STACKING
 
 `ifdef CHANNEL_STACKING
 	`undef CHANNEL_PADDING
@@ -18,7 +18,7 @@
 `endif
 
 `ifdef CHANNEL_STACKING
-	`define CHUNK_SIZE	128*2	//Bytes
+	`define CHUNK_SIZE	128	//Bytes
 `elsif CHANNEL_PADDING
 	`define CHUNK_SIZE	128	//Bytes
 `endif
@@ -26,7 +26,7 @@
 `define BUS_SIZE		8	//Bytes
 `define PREFIX_SUM_SIZE		8	//bits
 `define OUTPUT_BUF_SIZE		32	//bits
-`define COMPUTE_UNIT_NUM	32
+`define COMPUTE_UNIT_NUM	1
 `define DAT_SIZE		8	//bits 
 `define DIVIDED_CHANNEL_NUM 	8
 
@@ -35,9 +35,11 @@
 
 // Do not change when FULL_CHANNEL and CHANNEL_PADDING
 `define LAYER_CHANNEL_NUM 	192
-`define LAYER_FILTER_SIZE_MAX 	11
-`define LAYER_FILTER_SIZE_X 	2
-`define LAYER_FILTER_SIZE_Y 	2
+`define LAYER_FILTER_SIZE_MAX 	5
+`define LAYER_OUTPUT_SIZE_MAX 	10
+`define LAYER_IFM_SIZE_MAX 	(`LAYER_FILTER_SIZE_MAX + `LAYER_OUTPUT_SIZE_MAX - 1)
+`define LAYER_FILTER_SIZE_X 	4
+`define LAYER_FILTER_SIZE_Y 	4
 `define LAYER_OUTPUT_SIZE_X 	6
 `define LAYER_OUTPUT_SIZE_Y 	6
 `define LAYER_IFM_SIZE_X 	(`LAYER_FILTER_SIZE_X + `LAYER_OUTPUT_SIZE_X - 1)
@@ -52,7 +54,7 @@
 `define RD_DAT_CYC_NUM		(`CHUNK_SIZE/`PREFIX_SUM_SIZE)
 
 `ifdef CHANNEL_STACKING
-	`define SIM_CHUNK_SIZE	256
+	`define SIM_CHUNK_SIZE	128
 `elsif CHANNEL_PADDING
 	`define SIM_CHUNK_SIZE	128	//Bytes
 `endif

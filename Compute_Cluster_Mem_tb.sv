@@ -57,10 +57,10 @@ logic [`OUTPUT_BUF_SIZE-1:0] out_buf_dat_o;
 
 `ifdef CHANNEL_STACKING
 logic inner_loop_start_i;
-logic [$clog2(`LAYER_IFM_SIZE_Y)-1:0] fil_loop_y_idx_start;
-logic [$clog2(`LAYER_IFM_SIZE_Y)-1:0] fil_loop_y_idx_last;
-logic [$clog2(`LAYER_IFM_SIZE_X*`DIVIDED_CHANNEL_NUM/`PREFIX_SUM_SIZE + 1)-1:0] fil_loop_y_step;
-logic [$clog2(`DIVIDED_CHANNEL_NUM)-1:0] sub_channel_size;
+logic [$clog2(`LAYER_IFM_SIZE_MAX):0] fil_loop_y_idx_start;
+logic [$clog2(`LAYER_IFM_SIZE_MAX):0] fil_loop_y_idx_last;
+logic [$clog2(`LAYER_IFM_SIZE_MAX*`DIVIDED_CHANNEL_NUM/`PREFIX_SUM_SIZE + 1):0] fil_loop_y_step;
+logic [$clog2(`DIVIDED_CHANNEL_NUM):0] sub_channel_size;
 logic total_inner_loop_finish_o;
 `endif
 
@@ -150,21 +150,17 @@ endtask
 localparam int SIM_LOOP_Z_NUM = (`LAYER_CHANNEL_NUM % `DIVIDED_CHANNEL_NUM) ? (`LAYER_CHANNEL_NUM / `DIVIDED_CHANNEL_NUM) + 1 : (`LAYER_CHANNEL_NUM / `DIVIDED_CHANNEL_NUM);
 localparam int SIM_LAST_CHANNEL_SIZE = (`LAYER_CHANNEL_NUM % `DIVIDED_CHANNEL_NUM) ? (`LAYER_CHANNEL_NUM % `DIVIDED_CHANNEL_NUM) : `DIVIDED_CHANNEL_NUM;
 
-int fil_chunk_dat_size = `LAYER_FILTER_SIZE_X * `LAYER_FILTER_SIZE_Y * `DIVIDED_CHANNEL_NUM;
-int fil_chunk_dat_wr_cyc_num = (fil_chunk_dat_size % `BUS_SIZE) ? fil_chunk_dat_size/`BUS_SIZE + 1 : fil_chunk_dat_size/`BUS_SIZE;
-int ifm_chunk_dat_size;
-int ifm_chunk_dat_wr_cyc_num;
+wire [31:0] fil_chunk_dat_size = `LAYER_FILTER_SIZE_X * `LAYER_FILTER_SIZE_Y * `DIVIDED_CHANNEL_NUM;
+wire [31:0] fil_chunk_dat_wr_cyc_num = (fil_chunk_dat_size % `BUS_SIZE) ? fil_chunk_dat_size/`BUS_SIZE + 1 : fil_chunk_dat_size/`BUS_SIZE;
+logic [31:0] ifm_chunk_dat_size;
+logic [31:0] ifm_chunk_dat_wr_cyc_num;
 
-int fil_z_idx;
+logic [31:0] fil_z_idx;
 
-logic [$clog2(`LAYER_IFM_SIZE_Y)-1:0] ifm_loop_y_num = `LAYER_IFM_SIZE_Y;
-logic [$clog2(`LAYER_IFM_SIZE_Y)-1:0] ifm_loop_y_idx;
+logic [$clog2(`LAYER_IFM_SIZE_MAX):0] ifm_loop_y_num = `LAYER_IFM_SIZE_Y;
+logic [$clog2(`LAYER_IFM_SIZE_MAX):0] ifm_loop_y_idx;
 
-int fil_loop_y_idx;
-logic [$clog2(`LAYER_IFM_SIZE_X*`DIVIDED_CHANNEL_NUM)-1:0] fil_loop_y_dat_size;
-
-int ifm_loop_x_idx;
-int ifm_loop_x_dat_start;
+logic [$clog2(`LAYER_IFM_SIZE_MAX*`DIVIDED_CHANNEL_NUM)-1:0] fil_loop_y_dat_size;
 
 initial begin
 	run_valid_i = 0;
@@ -177,19 +173,7 @@ initial begin
 
 	@(negedge rst_i) ;
 	@(posedge clk_i) #1;
-/*
-	// Write mem
-	mem_gen_start_i = 1'b1;
-	fork
-		begin
-			@(posedge clk_i) #1;
-			mem_gen_start_i = 1'b0;
-		end
-	join_none
 
-	// Finish wrting mem
-	@(posedge mem_gen_finish_w);
-*/
 	// Read mem to chunks
 	if (SIM_LOOP_Z_NUM == 1)
 		sub_channel_size = SIM_LAST_CHANNEL_SIZE;

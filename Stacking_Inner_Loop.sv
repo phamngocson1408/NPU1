@@ -26,11 +26,11 @@ module Stacking_Inner_Loop(
 
 	,input inner_loop_start_i
 	,input sub_chunk_end_i
-	,input [$clog2(`LAYER_IFM_SIZE_Y)-1:0] ifm_loop_y_idx_i 
-	,input [$clog2(`LAYER_IFM_SIZE_Y)-1:0] fil_loop_y_idx_start_i 
-	,input [$clog2(`LAYER_IFM_SIZE_Y)-1:0] fil_loop_y_idx_last_i 
-	,input [$clog2(`LAYER_IFM_SIZE_X*`DIVIDED_CHANNEL_NUM/`PREFIX_SUM_SIZE + 1)-1:0] fil_loop_y_step_i 
-	,input [$clog2(`DIVIDED_CHANNEL_NUM)-1:0] sub_channel_size_i 
+	,input [$clog2(`LAYER_IFM_SIZE_MAX):0] ifm_loop_y_idx_i 
+	,input [$clog2(`LAYER_IFM_SIZE_MAX):0] fil_loop_y_idx_start_i 
+	,input [$clog2(`LAYER_IFM_SIZE_MAX):0] fil_loop_y_idx_last_i 
+	,input [$clog2(`LAYER_IFM_SIZE_MAX*`DIVIDED_CHANNEL_NUM/`PREFIX_SUM_SIZE + 1):0] fil_loop_y_step_i 
+	,input [$clog2(`DIVIDED_CHANNEL_NUM):0] sub_channel_size_i 
 	
 	
 	,output logic [$clog2(`RD_DAT_CYC_NUM)-1:0] rd_fil_sparsemap_first_o
