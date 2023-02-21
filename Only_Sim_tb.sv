@@ -39,10 +39,10 @@ end
 /*******************************************************************************************************/
 // Layer define
 localparam int BUS_SIZE = 8;
-localparam int STRIDE = 1;
-localparam int LAY_CHNL_NUM = 512;
-localparam int LAY_FIL_SIZE_X = 3;
-localparam int LAY_FIL_SIZE_Y = 3;
+localparam int STRIDE = 2;
+localparam int LAY_CHNL_NUM = 3;
+localparam int LAY_FIL_SIZE_X = 7;
+localparam int LAY_FIL_SIZE_Y = 7;
 localparam int LAY_OUT_SIZE_X = 7;
 localparam int LAY_OUT_SIZE_Y = 14;
 localparam int LAY_IFM_SIZE_X = (LAY_OUT_SIZE_X - 1) * STRIDE + 1 + LAY_FIL_SIZE_X - 1; 
@@ -52,7 +52,7 @@ localparam int LAY_IFM_SIZE_Y = (LAY_OUT_SIZE_Y - 1) * STRIDE + 1 + LAY_FIL_SIZE
 //Channel stacking
 int sta_fil_dat_rd_num;
 int sta_ifm_dat_rd_num;
-int sta_tot_dat_rd_num;
+//int sta_tot_dat_rd_num;
 
 localparam int STA_DIV_CHNL_NUM = 8;
 localparam int STA_LOOP_Z_NUM = (LAY_CHNL_NUM % STA_DIV_CHNL_NUM) ? (LAY_CHNL_NUM / STA_DIV_CHNL_NUM) + 1 : (LAY_CHNL_NUM / STA_DIV_CHNL_NUM);
@@ -70,7 +70,7 @@ int sta_ifm_chnk_dat_wr_cyc_num;
 //Channel padding
 int pad_fil_dat_rd_num;
 int pad_ifm_dat_rd_num;
-int pad_tot_dat_rd_num;
+//int pad_tot_dat_rd_num;
 localparam int PAD_CHNK_SIZE = 128;
 localparam int PAD_LOOP_Z_NUM = (LAY_CHNL_NUM % PAD_CHNK_SIZE) ? (LAY_CHNL_NUM / PAD_CHNK_SIZE) + 1 : (LAY_CHNL_NUM / PAD_CHNK_SIZE);
 localparam int PAD_LAST_CHNL_SIZE = (LAY_CHNL_NUM % PAD_CHNK_SIZE) ? (LAY_CHNL_NUM % PAD_CHNK_SIZE) : PAD_CHNK_SIZE;
@@ -90,7 +90,7 @@ fork
 	begin
 		sta_fil_dat_rd_num = 0;
 		sta_ifm_dat_rd_num = 0;
-		sta_tot_dat_rd_num = 0;
+		//sta_tot_dat_rd_num = 0;
 		for (sta_loop_z_idx = 0; sta_loop_z_idx < STA_LOOP_Z_NUM; sta_loop_z_idx += 1) begin
 		
 			if (sta_loop_z_idx == STA_LOOP_Z_NUM - 1)
@@ -106,7 +106,7 @@ fork
 			sta_ifm_chnk_dat_wr_cyc_num = (sta_ifm_chnk_dat_size % BUS_SIZE) ? sta_ifm_chnk_dat_size/BUS_SIZE + 1 : sta_ifm_chnk_dat_size/BUS_SIZE;
 			for (sta_ifm_loop_y_idx = 0; sta_ifm_loop_y_idx < LAY_IFM_SIZE_Y; sta_ifm_loop_y_idx += 1) begin
 				sta_ifm_dat_rd_num += sta_ifm_chnk_dat_wr_cyc_num * (BUS_SIZE + 1);
-				sta_tot_dat_rd_num = sta_fil_dat_rd_num + sta_ifm_dat_rd_num;
+				//sta_tot_dat_rd_num = sta_fil_dat_rd_num + sta_ifm_dat_rd_num;
 				@ (posedge clk_i);
 			end
 		end
@@ -117,7 +117,7 @@ fork
 	begin
 		pad_fil_dat_rd_num = 0;
 		pad_ifm_dat_rd_num = 0;
-		pad_tot_dat_rd_num = 0;
+		//pad_tot_dat_rd_num = 0;
 		for (pad_loop_z_idx = 0; pad_loop_z_idx < PAD_LOOP_Z_NUM; pad_loop_z_idx += 1) begin
 		
 			if (pad_loop_z_idx == PAD_LOOP_Z_NUM - 1)
@@ -134,7 +134,7 @@ fork
 					for (pad_ifm_loop_y_idx = 0; pad_ifm_loop_y_idx < LAY_OUT_SIZE_Y; pad_ifm_loop_y_idx += 1) begin
 						for (pad_ifm_loop_x_idx = 0; pad_ifm_loop_x_idx < LAY_OUT_SIZE_X; pad_ifm_loop_x_idx += 1) begin
 							pad_ifm_dat_rd_num += pad_chnk_dat_wr_cyc_num * (BUS_SIZE + 1);
-							pad_tot_dat_rd_num = pad_fil_dat_rd_num + pad_ifm_dat_rd_num;				
+							//pad_tot_dat_rd_num = pad_fil_dat_rd_num + pad_ifm_dat_rd_num;				
 							@ (posedge clk_i);
 						end
 					end
@@ -144,8 +144,10 @@ fork
 		end
 	end
 join
-$display("Stacking: %d", sta_tot_dat_rd_num);
-$display("Padding: %d", pad_tot_dat_rd_num);
+$display("Stacking ifm: %d", sta_ifm_dat_rd_num);
+$display("Stacking fil: %d", sta_fil_dat_rd_num);
+$display("Padding ifm: %d", pad_ifm_dat_rd_num);
+$display("Padding fil: %d", pad_fil_dat_rd_num);
 $finish();
 end
 
